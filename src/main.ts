@@ -1,9 +1,14 @@
 import './scss/styles.scss';
 
+
 import { Products } from './components/Models/Products';
 import { Basket } from './components/Models/Basket';
 import { Buyer } from './components/Models/Buyer';
 import { apiProducts } from './utils/data';
+
+import { Api } from './components/base/api';
+import { LarekApi } from './components/Api/LarekApi';
+
 
 // Проверка модели каталога
 const productsModel = new Products();
@@ -59,3 +64,17 @@ console.log(
   'Ошибки валидации после очистки:',
   buyerModel.validate()
 );
+
+// ---------- Работа с сервером ----------
+const apiBaseUrl = `${import.meta.env.VITE_API_ORIGIN}/api/weblarek`;
+const api = new Api(apiBaseUrl);
+const larekApi = new LarekApi(api);
+
+larekApi.getProducts()
+    .then((items) => {
+        productsModel.setItems(items);
+        console.log('Каталог товаров (с сервера):', productsModel.getItems());
+    })
+    .catch((error) => {
+        console.error('Ошибка при загрузке каталога с сервера:', error);
+    });
