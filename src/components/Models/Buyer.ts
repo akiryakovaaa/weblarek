@@ -1,61 +1,42 @@
-import { IBuyer, TPayment } from '../../types';
+import { IBuyer } from '../../types';
+import { events } from '../base/Events';
 
 export class Buyer {
-  private payment: TPayment | null = null;
-  private address = '';
-  private email = '';
-  private phone = '';
+  private data: Partial<IBuyer> = {};
 
-  // Сохранение данных (можно передать только часть полей)
-  setData(data: Partial<IBuyer>): void {
-    if (data.payment !== undefined) {
-      this.payment = data.payment;
-    }
-    if (data.address !== undefined) {
-      this.address = data.address;
-    }
-    if (data.email !== undefined) {
-      this.email = data.email;
-    }
-    if (data.phone !== undefined) {
-      this.phone = data.phone;
-    }
+  // изменить данные покупателя
+  setData(update: Partial<IBuyer>): void {
+    this.data = { ...this.data, ...update };
+
+    // событие: покупатель изменён
+    events.emit('buyer:changed', {
+      data: this.data,
+    });
   }
 
-  // Получение всех данных покупателя
-  getData(): IBuyer {
-    return {
-      payment: this.payment,
-      address: this.address,
-      email: this.email,
-      phone: this.phone,
-    };
+  // получить данные покупателя
+  getData(): Partial<IBuyer> {
+    return this.data;
   }
 
-  // Очистка данных покупателя
+  // очистить данные покупателя
   clear(): void {
-    this.payment = null;
-    this.address = '';
-    this.email = '';
-    this.phone = '';
+    this.data = {};
+
+    // событие: покупатель изменён
+    events.emit('buyer:changed', {
+      data: this.data,
+    });
   }
 
-  // Валидация данных
+  // проверка корректности данных
   validate(): Record<string, string> {
     const errors: Record<string, string> = {};
 
-    if (!this.payment) {
-      errors.payment = 'Не выбран вид оплаты';
-    }
-    if (!this.address.trim()) {
-      errors.address = 'Укажите адрес';
-    }
-    if (!this.email.trim()) {
-      errors.email = 'Укажите email';
-    }
-    if (!this.phone.trim()) {
-      errors.phone = 'Укажите телефон';
-    }
+    if (!this.data.payment) errors.payment = 'Не указан способ оплаты';
+    if (!this.data.address) errors.address = 'Не указан адрес';
+    if (!this.data.email) errors.email = 'Не указан email';
+    if (!this.data.phone) errors.phone = 'Не указан телефон';
 
     return errors;
   }

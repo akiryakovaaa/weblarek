@@ -1,30 +1,41 @@
 import { IProduct } from '../../types';
+import { events } from '../base/Events';
 
 export class Products {
   private items: IProduct[] = [];
   private selected: IProduct | null = null;
 
-  // Сохраняем массив товаров
+  // сохранить весь каталог товаров
   setItems(items: IProduct[]): void {
     this.items = items;
+
+    // событие: каталог товаров изменён
+    events.emit('products:changed', {
+      items: this.items,
+    });
   }
 
-  // Получаем массив всех товаров
+  // получить весь каталог товаров
   getItems(): IProduct[] {
     return this.items;
   }
 
-  // Получаем один товар по id
+  // получить один товар по ID
   getItemById(id: string): IProduct | undefined {
     return this.items.find((item) => item.id === id);
   }
 
-  // Сохраняем товар для подробного отображения
-  setSelected(item: IProduct): void {
+  // сохранить выбранный товар (для превью/modals)
+  setSelected(item: IProduct | null): void {
     this.selected = item;
+
+    // событие: выбранный товар изменён
+    events.emit('products:selected', {
+      product: this.selected,
+    });
   }
 
-  // Получаем товар для подробного отображения
+  // получить выбранный товар
   getSelected(): IProduct | null {
     return this.selected;
   }
