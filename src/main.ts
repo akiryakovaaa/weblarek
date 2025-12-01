@@ -66,8 +66,9 @@ console.log(
 );
 
 // ---------- Работа с сервером ----------
-const apiBaseUrl = `${import.meta.env.VITE_API_ORIGIN}/api/weblarek`;
-const api = new Api(apiBaseUrl);
+import {API_URL} from './utils/constants';
+
+const api = new Api(API_URL);
 const larekApi = new LarekApi(api);
 
 larekApi.getProducts()
