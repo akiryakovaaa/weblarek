@@ -9,12 +9,12 @@ export class CardPreview extends BaseCard {
 	constructor(container: HTMLElement) {
 		super(container);
 
-		// Кнопка "Купить / Удалить" внутри превью
+		// кнопка в модалке
 		if (this.buttonElement) {
 			this.buttonElement.addEventListener('click', (event) => {
 				event.stopPropagation();
+				if (this.buttonElement?.disabled) return;
 
-				// Презентер решит, добавить или удалить
 				events.emit('product:toggle-from-preview', { id: this.id });
 			});
 		}
@@ -26,11 +26,8 @@ export class CardPreview extends BaseCard {
 		this.title = data.title;
 		this.price = data.price;
 		this.category = data.category;
-
-		// Картинка — тоже через CDN_URL
 		this.image = `${CDN_URL}/${data.image}`;
 
-		// Логика кнопки как и в каталоге: если нет цены — недоступно
 		if (this.buttonElement) {
 			if (data.price === null) {
 				this.setButtonDisabled(true, 'Недоступно');
