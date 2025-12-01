@@ -6,6 +6,7 @@ import { Buyer } from './components/Models/Buyer';
 
 import { CardCatalog } from './components/cards/CardCatalog';
 import { CardPreview } from './components/cards/CardPreview';
+import { BasketView } from './components/basket/BasketView';
 
 import { Modal } from './components/base/Modal';
 import { events } from './components/base/Events';
@@ -32,8 +33,19 @@ const catalogTemplate =
 	document.querySelector<HTMLTemplateElement>('#card-catalog');
 const previewTemplate =
 	document.querySelector<HTMLTemplateElement>('#card-preview');
+const basketTemplate =
+	document.querySelector<HTMLTemplateElement>('#basket');
+
+const basketButton = document.querySelector<HTMLButtonElement>('.header__basket');
 
 const modal = new Modal();
+
+// экземпляр View корзины (обёртка над разметкой из template)
+const basketView = basketTemplate
+	? new BasketView(
+			basketTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement
+	  )
+	: null;
 
 // =======================
 //   ОБРАБОТКА СОБЫТИЙ
@@ -78,8 +90,39 @@ events.on<{ product: IProduct | null }>('products:selected', ({ product }) => {
 	modal.open(content);
 });
 
-// (остальные события — корзина, формы, успешная оплата — добавим дальше,
- // когда дойдём до этой части презентера)
+// 4) Нажали "Купить" в карточке каталога → добавляем товар в корзину
+events.on<{ id: string }>('product:add-to-basket', ({ id }) => {
+	const product = productsModel.getItemById(id);
+	if (!product) return;
+
+	basketModel.addItem(product);
+});
+
+// 5) Клик по иконке корзины в шапке → открыть корзину
+basketButton?.addEventListener('click', () => {
+	events.emit('basket:open', {});
+});
+
+// 6) Открытие корзины → рендерим её и показываем в модалке
+events.on('basket:open', () => {
+	if (!basketView) return;
+
+	// превращаем товары корзины в <li>-элементы
+	const itemsNodes = basketModel.getItems().map((item) => {
+		const li = document.createElement('li');
+		li.classList.add('basket__item');
+		li.textContent = `${item.title} — ${
+			item.price === null ? 'бесценно' : item.price + ' син. '
+		}`;
+		return li;
+	});
+
+	const total = basketModel.getTotal();
+	const content = basketView.render(itemsNodes, total);
+	modal.open(content);
+});
+
+// (дальше можно будет добавить обработчик basket:submit, формы заказа и т.д.)
 
 // =======================
 //   ЗАГРУЗКА ДАННЫХ С СЕРВЕРА
