@@ -34,7 +34,7 @@ export class CardCatalog extends BaseCard {
 		this.image = `${CDN_URL}/${data.image}`;
 		this.category = data.category;
 
-		// ----- ЦВЕТНАЯ Плашка категории -----
+		// ----- ЦВЕТНАЯ плашка категории -----
 		const categoryElement = this.container.querySelector(
 			'.card__category'
 		) as HTMLElement | null;
@@ -43,8 +43,9 @@ export class CardCatalog extends BaseCard {
 			// сбрасываем старые классы и добавляем базовый
 			categoryElement.className = 'card__category';
 
-			// находим класс по карте категорий
-			const categoryClass = categoryMap[data.category];
+			// ЯВНО говорим TS, что categoryMap — это Record<string, string>
+			const map = categoryMap as Record<string, string>;
+			const categoryClass = map[data.category];
 
 			if (categoryClass) {
 				categoryElement.classList.add(categoryClass);
