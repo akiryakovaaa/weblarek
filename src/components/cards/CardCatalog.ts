@@ -1,7 +1,7 @@
 import { BaseCard } from '../base/BaseCard';
 import { IProduct } from '../../types';
 import { events } from '../base/Events';
-import { CDN_URL } from '../../utils/constants';
+import { CDN_URL, categoryMap } from '../../utils/constants';
 
 export class CardCatalog extends BaseCard {
 	private id!: string;
@@ -17,8 +17,8 @@ export class CardCatalog extends BaseCard {
 		// клик по кнопке "Купить" — добавить в корзину
 		if (this.buttonElement) {
 			this.buttonElement.addEventListener('click', (event) => {
-				event.stopPropagation(); // чтобы не триггерить открытие превью
-				if (this.buttonElement?.disabled) return; // если "Недоступно" — не шлём
+				event.stopPropagation(); // чтобы не открывалось превью
+				if (this.buttonElement?.disabled) return; // если "Недоступно" — ничего не делаем
 
 				events.emit('product:add-to-basket', { id: this.id });
 			});
@@ -28,12 +28,33 @@ export class CardCatalog extends BaseCard {
 	render(data: IProduct): HTMLElement {
 		this.id = data.id;
 
+		// базовые поля карточки
 		this.title = data.title;
 		this.price = data.price;
-		this.category = data.category;
 		this.image = `${CDN_URL}/${data.image}`;
+		this.category = data.category;
 
-		// состояние кнопки
+		// ----- ЦВЕТНАЯ Плашка категории -----
+		const categoryElement = this.container.querySelector(
+			'.card__category'
+		) as HTMLElement | null;
+
+		if (categoryElement) {
+			// сбрасываем старые классы и добавляем базовый
+			categoryElement.className = 'card__category';
+
+			// находим класс по карте категорий
+			const categoryClass = categoryMap[data.category];
+
+			if (categoryClass) {
+				categoryElement.classList.add(categoryClass);
+			}
+
+			// текст плашки
+			categoryElement.textContent = data.category;
+		}
+
+		// ----- Кнопка "Купить" / "Недоступно" -----
 		if (this.buttonElement) {
 			if (data.price === null) {
 				this.setButtonDisabled(true, 'Недоступно');
