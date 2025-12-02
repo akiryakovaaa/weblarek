@@ -7,6 +7,9 @@ import { Buyer } from './components/Models/Buyer';
 import { CardCatalog } from './components/cards/CardCatalog';
 import { CardPreview } from './components/cards/CardPreview';
 import { BasketView } from './components/basket/BasketView';
+import { OrderFormStep1 } from './components/forms/OrderFormStep1';
+import { OrderFormStep2 } from './components/forms/OrderFormStep2';
+import { SuccessView } from './components/success/SuccessView';
 
 import { Modal } from './components/base/Modal';
 import { events } from './components/base/Events';
@@ -22,7 +25,7 @@ import { IProduct } from './types';
 
 const productsModel = new Products();
 const basketModel = new Basket();
-const buyerModel = new Buyer(); // пока просто инициализируем, пригодится для форм
+const buyerModel = new Buyer();
 
 // =======================
 //   DOM и VIEW
@@ -35,6 +38,12 @@ const previewTemplate =
 	document.querySelector<HTMLTemplateElement>('#card-preview');
 const basketTemplate =
 	document.querySelector<HTMLTemplateElement>('#basket');
+const orderTemplate =
+	document.querySelector<HTMLTemplateElement>('#order');
+const contactsTemplate =
+	document.querySelector<HTMLTemplateElement>('#contacts');
+const successTemplate =
+	document.querySelector<HTMLTemplateElement>('#success');
 
 const basketButton =
 	document.querySelector<HTMLButtonElement>('.header__basket');
@@ -58,33 +67,26 @@ function openBasket() {
 	if (!basketView) return;
 
 	const itemsNodes = basketModel.getItems().map((item, index) => {
-		// <li class="basket__item card card_compact">
 		const li = document.createElement('li');
 		li.classList.add('basket__item', 'card', 'card_compact');
 
-		// номер позиции
 		const indexSpan = document.createElement('span');
 		indexSpan.classList.add('basket__item-index');
 		indexSpan.textContent = String(index + 1);
 
-		// название товара
 		const titleSpan = document.createElement('span');
 		titleSpan.classList.add('card__title');
 		titleSpan.textContent = item.title;
 
-		// цена товара
 		const priceSpan = document.createElement('span');
 		priceSpan.classList.add('card__price');
 		priceSpan.textContent =
 			item.price === null ? 'Бесценно' : `${item.price} синапсов`;
 
-		// кнопка удаления
 		const deleteBtn = document.createElement('button');
 		deleteBtn.classList.add('basket__item-delete');
 		deleteBtn.type = 'button';
 		deleteBtn.setAttribute('aria-label', 'Удалить из корзины');
-
-		// удаляем товар при клике
 		deleteBtn.addEventListener('click', () => {
 			basketModel.removeItem(item);
 		});
@@ -171,7 +173,74 @@ basketButton?.addEventListener('click', () => {
 	openBasket();
 });
 
-// (дальше можно будет добавить обработку basket:submit и формы заказа)
+// 8. Нажали «Оформить» в корзине → открыть шаг 1 (способ оплаты + адрес)
+events.on('basket:submit', () => {
+	if (!orderTemplate) return;
+
+	// клонируем форму заказа (шаг 1)
+	const element = orderTemplate.content.firstElementChild!.cloneNode(
+		true
+	) as HTMLElement;
+
+	const orderFormStep1 = new OrderFormStep1(element);
+	const content = orderFormStep1.render();
+
+	modal.open(content);
+});
+
+// 9. Изменение способа оплаты
+events.on<{ payment: 'card' | 'cash' }>('order:change-payment', ({ payment }) => {
+	buyerModel.setData({ payment });
+});
+
+// 10. Изменение адреса
+events.on<{ address: string }>('order:change-address', ({ address }) => {
+	buyerModel.setData({ address });
+});
+
+// 11. Первый шаг формы успешно пройден → открываем шаг 2 (Email + телефон)
+events.on('order:submit-step1', () => {
+	if (!contactsTemplate) return;
+
+	const element = contactsTemplate.content.firstElementChild!.cloneNode(
+		true
+	) as HTMLElement;
+
+	const orderFormStep2 = new OrderFormStep2(element);
+	const content = orderFormStep2.render();
+
+	modal.open(content);
+});
+
+// 12. Изменение email
+events.on<{ email: string }>('order:change-email', ({ email }) => {
+	buyerModel.setData({ email });
+});
+
+// 13. Изменение телефона
+events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
+	buyerModel.setData({ phone });
+});
+
+// 14. Второй шаг формы успешно пройден → (пока без реального API) показываем успех
+events.on('order:submit-step2', () => {
+	if (!successTemplate) return;
+
+	const element = successTemplate.content.firstElementChild!.cloneNode(
+		true
+	) as HTMLElement;
+
+	const successView = new SuccessView(element);
+
+	// временный ID заказа и сумма — чтобы было что показать
+	const orderId = '123456';
+	const content = successView.render(orderId);
+
+	// можно здесь же очистить корзину
+	basketModel.clear();
+
+	modal.open(content);
+});
 
 // =======================
 //   ЗАГРУЗКА ДАННЫХ

@@ -6,19 +6,31 @@ export abstract class BaseForm {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.formElement = container.querySelector('form') as HTMLFormElement;
 
-    // обработка изменений в полях
+    // контейнер может быть самой <form>, а может обёрткой
+    const form =
+      container instanceof HTMLFormElement
+        ? container
+        : (container.querySelector('form') as HTMLFormElement | null);
+
+    if (!form) {
+      throw new Error('Form element not found in BaseForm');
+    }
+
+    this.formElement = form;
+
+    // общий обработчик (можно оставить, он не мешает)
     this.formElement.addEventListener('input', (event) => {
-      const target = event.target as HTMLInputElement;
+      const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+      if (!target.name) return;
+
       events.emit('form:change', {
         name: target.name,
-        value: target.value
+        value: target.value,
       });
     });
   }
 
-  // используется для отображения формы внутри модалки
   render(): HTMLElement {
     return this.container;
   }

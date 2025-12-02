@@ -6,54 +6,50 @@ export class BasketView {
 	private totalElement: HTMLElement;
 	private submitButton: HTMLButtonElement;
 
-	// создаём placeholder-плашку сами, т.к. в index.html её нет
+	// элемент "Корзина пуста"
 	private emptyElement: HTMLParagraphElement;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
 
-		this.listElement = container.querySelector('.basket__list')!;
-		this.totalElement = container.querySelector('.basket__price')!;
-		this.submitButton = container.querySelector('.basket__button')!;
+		this.listElement = container.querySelector('.basket__list') as HTMLElement;
+		this.totalElement = container.querySelector('.basket__price') as HTMLElement;
+		this.submitButton = container.querySelector('.basket__button') as HTMLButtonElement;
 
-		// создаём "Корзина пуста", если корзина пуста
+		// создаём надпись "Корзина пуста"
 		this.emptyElement = document.createElement('p');
 		this.emptyElement.classList.add('basket__empty');
 		this.emptyElement.textContent = 'Корзина пуста';
-		this.emptyElement.style.padding = '10px 0';
-		this.emptyElement.style.opacity = '0.6';
 
-		// кнопка "Оформить"
+		// обработчик кнопки "Оформить"
 		this.submitButton.addEventListener('click', () => {
 			events.emit('basket:submit', {});
 		});
 	}
 
-	// рендер корзины
-	render(items: HTMLElement[], total: number) {
-		// очищаем список
+	// ---------- РЕНДЕР ----------
+	render(items: HTMLElement[], total: number): HTMLElement {
+		// обновляем список товаров
 		this.listElement.replaceChildren(...items);
 
-		// устанавливаем цену
-		this.totalElement.textContent =
-			total === 0 ? '0 синапсов' : `${total} синапсов`;
+		// обновляем сумму
+		this.totalElement.textContent = `${total} синапсов`;
 
-		// корзина пуста?
-		const isEmpty = items.length === 0;
-
-		// если пусто — показываем текст
-		if (isEmpty) {
+		// проверка на пустую корзину
+		if (items.length === 0) {
+			// показываем плейсхолдер
 			if (!this.listElement.contains(this.emptyElement)) {
 				this.listElement.appendChild(this.emptyElement);
 			}
 		} else {
+			// убираем плейсхолдер
 			if (this.listElement.contains(this.emptyElement)) {
 				this.emptyElement.remove();
 			}
 		}
 
-		// выключаем кнопку оформления
-		this.submitButton.disabled = isEmpty;
+		// блокируем кнопку если корзина пустая
+		this.submitButton.disabled = items.length === 0;
 
 		return this.container;
 	}
