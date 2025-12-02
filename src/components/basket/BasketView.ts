@@ -6,51 +6,63 @@ export class BasketView {
 	private totalElement: HTMLElement;
 	private submitButton: HTMLButtonElement;
 
-	// элемент "Корзина пуста"
 	private emptyElement: HTMLParagraphElement;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
 
-		this.listElement = container.querySelector('.basket__list') as HTMLElement;
-		this.totalElement = container.querySelector('.basket__price') as HTMLElement;
-		this.submitButton = container.querySelector('.basket__button') as HTMLButtonElement;
+		this.listElement = container.querySelector('.basket__list')!;
+		this.totalElement = container.querySelector('.basket__price')!;
+		this.submitButton = container.querySelector('.basket__button')!;
 
-		// создаём надпись "Корзина пуста"
 		this.emptyElement = document.createElement('p');
 		this.emptyElement.classList.add('basket__empty');
 		this.emptyElement.textContent = 'Корзина пуста';
 
-		// обработчик кнопки "Оформить"
 		this.submitButton.addEventListener('click', () => {
 			events.emit('basket:submit', {});
 		});
 	}
 
-	// ---------- РЕНДЕР ----------
-	render(items: HTMLElement[], total: number): HTMLElement {
-		// обновляем список товаров
-		this.listElement.replaceChildren(...items);
+render(items: HTMLElement[], total: number) {
+	// очищаем список
+	this.listElement.replaceChildren(...items);
 
-		// обновляем сумму
-		this.totalElement.textContent = `${total} синапсов`;
+	const isEmpty = items.length === 0;
 
-		// проверка на пустую корзину
-		if (items.length === 0) {
-			// показываем плейсхолдер
-			if (!this.listElement.contains(this.emptyElement)) {
-				this.listElement.appendChild(this.emptyElement);
-			}
-		} else {
-			// убираем плейсхолдер
-			if (this.listElement.contains(this.emptyElement)) {
-				this.emptyElement.remove();
-			}
-		}
-
-		// блокируем кнопку если корзина пустая
-		this.submitButton.disabled = items.length === 0;
-
-		return this.container;
+	// ------ Размер корзины ------
+	if (isEmpty) {
+		this.container.style.height = '220px';
+		this.container.style.maxHeight = '220px';
+	} else {
+		this.container.style.height = 'auto';
+		this.container.style.maxHeight = 'none';   // без скролла
 	}
+
+	// ------ Плашка "Корзина пуста" ------
+	if (isEmpty) {
+		if (!this.listElement.contains(this.emptyElement)) {
+			this.listElement.appendChild(this.emptyElement);
+		}
+	} else {
+		if (this.listElement.contains(this.emptyElement)) {
+			this.emptyElement.remove();
+		}
+	}
+
+	// ------ Цена ------
+	this.totalElement.textContent =
+		total === 0 ? '0 синапсов' : `${total} синапсов`;
+
+	// ------ Кнопка Оформить ------
+	this.submitButton.disabled = isEmpty;
+
+	// отключаем любой скролл
+	this.container.style.overflow = 'hidden';
+	this.listElement.style.overflow = 'hidden';
+
+	return this.container;
+}
+
+
 }

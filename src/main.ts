@@ -17,7 +17,7 @@ import { events } from './components/base/Events';
 import { Api } from './components/base/Api';
 import { LarekApi } from './components/Api/LarekApi';
 import { API_URL } from './utils/constants';
-import { IProduct } from './types';
+import { IProduct, IOrder } from './types';
 
 // =======================
 //   МОДЕЛИ
@@ -60,6 +60,22 @@ const basketView = basketTemplate
 	: null;
 
 // =======================
+//   API
+// =======================
+
+const api = new Api(API_URL);
+const larekApi = new LarekApi(api);
+
+larekApi
+	.getProducts()
+	.then((items) => {
+		productsModel.setItems(items);
+	})
+	.catch((error) => {
+		console.error('Ошибка при загрузке каталога:', error);
+	});
+
+// =======================
 //   ВСПОМОГАТЕЛЬНОЕ: открыть корзину
 // =======================
 
@@ -89,6 +105,7 @@ function openBasket() {
 		deleteBtn.setAttribute('aria-label', 'Удалить из корзины');
 		deleteBtn.addEventListener('click', () => {
 			basketModel.removeItem(item);
+			openBasket(); // перерисовываем корзину после удаления
 		});
 
 		li.append(indexSpan, titleSpan, priceSpan, deleteBtn);
@@ -149,7 +166,7 @@ events.on<{ id: string }>('product:add-to-basket', ({ id }) => {
 	basketModel.addItem(product);
 });
 
-// 5. Нажали "Купить" в модалке превью → добавить/убрать из корзины
+// 5. Нажали "Купить / Удалить" в модалке превью
 events.on<{ id: string }>('product:toggle-from-preview', ({ id }) => {
 	const product = productsModel.getItemById(id);
 	if (!product) return;
@@ -221,47 +238,67 @@ events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
 	buyerModel.setData({ phone });
 });
 
-// 14. Второй шаг формы успешно пройден → показываем успех
+// 14. Второй шаг формы успешно пройден → отправляем заказ на сервер
 events.on('order:submit-step2', () => {
 	if (!successTemplate) return;
 
-	const element = successTemplate.content.firstElementChild!.cloneNode(
-		true
-	) as HTMLElement;
+	const items = basketModel.getItems();
+	const total = basketModel.getTotal();
 
-	const successView = new SuccessView(element);
+	const buyerData =
+		(buyerModel as any).getData?.() ??
+		({
+			payment: (buyerModel as any).payment,
+			address: (buyerModel as any).address,
+			email: (buyerModel as any).email,
+			phone: (buyerModel as any).phone,
+		} as any);
 
-	// пока делаем фейковый номер заказа
-	const orderId = '123456';
-	const content = successView.render(orderId);
+	const order: IOrder = {
+		items: items.map((item) => item.id),
+		total,
+		payment: buyerData.payment,
+		address: buyerData.address,
+		email: buyerData.email,
+		phone: buyerData.phone,
+	};
 
-	// очищаем корзину
-	basketModel.clear();
-	if (basketCounter) {
-		basketCounter.textContent = '0';
-	}
+	larekApi
+		.createOrder(order)
+		.then((data) => {
+			const element = successTemplate.content.firstElementChild!.cloneNode(
+				true
+			) as HTMLElement;
 
-	modal.open(content);
+			const successView = new SuccessView(element);
+			// SuccessView ждёт строку, а не number:
+			const totalText = `Списано ${data.total} синапсов`;
+			const content = successView.render(totalText);
+
+			// очищаем корзину
+			basketModel.clear();
+
+			// очищаем данные покупателя
+			if ((buyerModel as any).clear) {
+				(buyerModel as any).clear();
+			} else if ((buyerModel as any).setData) {
+				(buyerModel as any).setData({
+					payment: null,
+					address: '',
+					email: '',
+					phone: '',
+				});
+			}
+
+			modal.open(content);
+		})
+		.catch((error) => {
+			console.error('Ошибка при оформлении заказа:', error);
+			alert('Не удалось оформить заказ, попробуйте ещё раз.');
+		});
 });
 
-// 15. Клик по кнопке «За новыми покупками!» в окне успеха
+// 15. Кнопка «За новыми покупками!» в окне успеха
 events.on('order:success-close', () => {
-	// просто закрываем модалку (каталог уже под ней)
 	modal.close();
 });
-
-// =======================
-//   ЗАГРУЗКА ДАННЫХ
-// =======================
-
-const api = new Api(API_URL);
-const larekApi = new LarekApi(api);
-
-larekApi
-	.getProducts()
-	.then((items) => {
-		productsModel.setItems(items);
-	})
-	.catch((error) => {
-		console.error('Ошибка при загрузке каталога:', error);
-	});
