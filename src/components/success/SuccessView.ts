@@ -1,23 +1,39 @@
 import { events } from '../base/Events';
 
 export class SuccessView {
-  private container: HTMLElement;
-  private orderIdElement: HTMLElement;
-  private closeButton: HTMLButtonElement;
+	private container: HTMLElement;
+	private button: HTMLButtonElement | null;
+	private descriptionElement: HTMLElement | null;
 
-  constructor(container: HTMLElement) {
-    this.container = container;
+	constructor(container: HTMLElement) {
+		this.container = container;
 
-    this.orderIdElement = container.querySelector('.success__id')!;
-    this.closeButton = container.querySelector('.success__close')!;
+		// Кнопка "За новыми покупками!"
+		this.button =
+			(container.querySelector('.success__button') as HTMLButtonElement) ||
+			(container.querySelector('button[type="button"]') as HTMLButtonElement) ||
+			(container.querySelector('button') as HTMLButtonElement);
 
-    this.closeButton.addEventListener('click', () => {
-      events.emit('order:success-close', {});
-    });
-  }
+		// Элемент с текстом "Списано ... синапсов" (если нужно обновлять текст)
+		this.descriptionElement =
+			(this.container.querySelector('.success__description') as HTMLElement) ||
+			(this.container.querySelector('.modal__description') as HTMLElement) ||
+			null;
 
-  render(orderId: string): HTMLElement {
-    this.orderIdElement.textContent = orderId;
-    return this.container;
-  }
+		// Навешиваем обработчик на кнопку
+		if (this.button) {
+			this.button.addEventListener('click', () => {
+				// сообщаем презентеру, что пользователь хочет вернуться к покупкам
+				events.emit('order:success-close', {});
+			});
+		}
+	}
+
+	// totalText — строка с суммой, которую можно показать в окне успеха
+	render(totalText?: string) {
+		if (this.descriptionElement && totalText) {
+			this.descriptionElement.textContent = totalText;
+		}
+		return this.container;
+	}
 }

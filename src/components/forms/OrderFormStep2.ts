@@ -5,94 +5,65 @@ export class OrderFormStep2 extends BaseForm {
   private emailInput: HTMLInputElement;
   private phoneInput: HTMLInputElement;
   private submitButton: HTMLButtonElement;
-  private errorElement: HTMLElement;
 
   constructor(container: HTMLElement) {
     super(container);
 
-    // Берём элементы ИМЕННО из formElement
-    this.emailInput =
-      this.formElement.querySelector<HTMLInputElement>('input[name="email"]')!;
-    this.phoneInput =
-      this.formElement.querySelector<HTMLInputElement>('input[name="phone"]')!;
+    this.emailInput = container.querySelector('input[name="email"]')!;
+    this.phoneInput = container.querySelector('input[name="phone"]')!;
 
-    // В шаблоне обычно просто кнопка type="submit"
-    this.submitButton =
-      this.formElement.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    // Ищем кнопку "Оплатить"
+    const submit =
+      (container.querySelector('button[type="submit"]') as HTMLButtonElement | null) ||
+      (container.querySelector('.order__button') as HTMLButtonElement | null);
 
-    this.errorElement =
-      this.formElement.querySelector<HTMLElement>('.form__errors')!;
+    if (!submit) {
+      throw new Error('Кнопка отправки во второй форме заказа не найдена');
+    }
 
-    // Стартовое состояние кнопки
-    this.updateSubmitState();
+    this.submitButton = submit;
 
-    // Изменение email
+    // --- валидация: просто оба поля не пустые ---
+    const updateSubmitState = () => {
+      const hasEmail = this.emailInput.value.trim().length > 0;
+      const hasPhone = this.phoneInput.value.trim().length > 0;
+
+      this.submitButton.disabled = !(hasEmail && hasPhone);
+    };
+
+    // начальное состояние
+    updateSubmitState();
+
+    // изменения email
     this.emailInput.addEventListener('input', () => {
       events.emit('order:change-email', {
-        email: this.emailInput.value.trim(),
+        email: this.emailInput.value,
       });
-      this.updateSubmitState();
+      updateSubmitState();
     });
 
-    // Изменение телефона
+    // изменения телефона
     this.phoneInput.addEventListener('input', () => {
       events.emit('order:change-phone', {
-        phone: this.phoneInput.value.trim(),
+        phone: this.phoneInput.value,
       });
-      this.updateSubmitState();
+      updateSubmitState();
     });
 
-    // Отправка формы (кнопка "Оплатить")
+    // отправка формы (по кнопке "Оплатить")
     this.formElement.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      if (!this.canSubmit()) {
-        this.showError();
+      if (this.submitButton.disabled) {
         return;
       }
 
-      this.errorElement.textContent = '';
+      // оба поля заполнены → сообщаем презентеру
       events.emit('order:submit-step2', {});
     });
   }
 
-  // Проверяем, можно ли активировать кнопку
-  private canSubmit(): boolean {
-    const email = this.emailInput.value.trim();
-    const phone = this.phoneInput.value.trim();
-
-    if (!email || !phone) return false;
-
-    // Простейшие проверки, чтобы хоть как-то фильтровать
-    const emailOk = email.includes('@');
-    const phoneOk = /\d{5,}/.test(phone);
-
-    return emailOk && phoneOk;
-  }
-
-  // Включаем/выключаем кнопку и чистим ошибку
-  private updateSubmitState() {
-    const ok = this.canSubmit();
-
-    if (this.submitButton) {
-      this.submitButton.disabled = !ok;
-    }
-
-    if (ok && this.errorElement) {
-      this.errorElement.textContent = '';
-    }
-  }
-
-  // Показать текст ошибки под кнопкой
-  private showError() {
-    if (!this.errorElement) return;
-
-    if (!this.emailInput.value.trim()) {
-      this.errorElement.textContent = 'Необходимо указать Email';
-    } else if (!this.phoneInput.value.trim()) {
-      this.errorElement.textContent = 'Необходимо указать телефон';
-    } else {
-      this.errorElement.textContent = 'Проверьте корректность Email и телефона';
-    }
+  render(): HTMLElement {
+    return this.container;
   }
 }

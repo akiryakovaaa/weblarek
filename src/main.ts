@@ -177,7 +177,6 @@ basketButton?.addEventListener('click', () => {
 events.on('basket:submit', () => {
 	if (!orderTemplate) return;
 
-	// клонируем форму заказа (шаг 1)
 	const element = orderTemplate.content.firstElementChild!.cloneNode(
 		true
 	) as HTMLElement;
@@ -198,7 +197,7 @@ events.on<{ address: string }>('order:change-address', ({ address }) => {
 	buyerModel.setData({ address });
 });
 
-// 11. Первый шаг формы успешно пройден → открываем шаг 2 (Email + телефон)
+// 11. Первый шаг формы успешно пройден → открыть шаг 2 (Email + телефон)
 events.on('order:submit-step1', () => {
 	if (!contactsTemplate) return;
 
@@ -222,7 +221,7 @@ events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
 	buyerModel.setData({ phone });
 });
 
-// 14. Второй шаг формы успешно пройден → (пока без реального API) показываем успех
+// 14. Второй шаг формы успешно пройден → показываем успех
 events.on('order:submit-step2', () => {
 	if (!successTemplate) return;
 
@@ -232,14 +231,23 @@ events.on('order:submit-step2', () => {
 
 	const successView = new SuccessView(element);
 
-	// временный ID заказа и сумма — чтобы было что показать
+	// пока делаем фейковый номер заказа
 	const orderId = '123456';
 	const content = successView.render(orderId);
 
-	// можно здесь же очистить корзину
+	// очищаем корзину
 	basketModel.clear();
+	if (basketCounter) {
+		basketCounter.textContent = '0';
+	}
 
 	modal.open(content);
+});
+
+// 15. Клик по кнопке «За новыми покупками!» в окне успеха
+events.on('order:success-close', () => {
+	// просто закрываем модалку (каталог уже под ней)
+	modal.close();
 });
 
 // =======================
