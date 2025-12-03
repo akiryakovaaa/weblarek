@@ -19,18 +19,13 @@ import { LarekApi } from './components/Api/LarekApi';
 import { API_URL } from './utils/constants';
 import { IProduct, IOrder } from './types';
 
-// =======================
 //   МОДЕЛИ
-// =======================
-
 const productsModel = new Products();
 const basketModel = new Basket();
 const buyerModel = new Buyer();
 
-// =======================
-//   DOM и VIEW
-// =======================
 
+//   DOM и VIEW
 const gallery = document.querySelector<HTMLElement>('.gallery');
 const catalogTemplate =
 	document.querySelector<HTMLTemplateElement>('#card-catalog');
@@ -44,12 +39,10 @@ const contactsTemplate =
 	document.querySelector<HTMLTemplateElement>('#contacts');
 const successTemplate =
 	document.querySelector<HTMLTemplateElement>('#success');
-
 const basketButton =
 	document.querySelector<HTMLButtonElement>('.header__basket');
 const basketCounter =
 	document.querySelector<HTMLElement>('.header__basket-counter');
-
 const modal = new Modal();
 
 // создаём view корзины из шаблона
@@ -59,10 +52,8 @@ const basketView = basketTemplate
 	  )
 	: null;
 
-// =======================
-//   API и загрузка каталога
-// =======================
 
+//   API и загрузка каталога
 const api = new Api(API_URL);
 const larekApi = new LarekApi(api);
 
@@ -75,10 +66,8 @@ larekApi
 		console.error('Ошибка при загрузке каталога:', error);
 	});
 
-// =======================
-//   ВСПОМОГАТЕЛЬНОЕ: открыть корзину
-// =======================
 
+//   ВСПОМОГАТЕЛЬНОЕ: открыть корзину
 function openBasket() {
 	if (!basketView) return;
 
@@ -119,11 +108,9 @@ function openBasket() {
 	modal.open(content);
 }
 
-// =======================
-//   ПРЕЗЕНТЕР (СОБЫТИЯ)
-// =======================
 
-// 1. Каталог обновился → рендерим карточки
+//   ПРЕЗЕНТЕР (СОБЫТИЯ)
+// Каталог обновился > рендерим карточки
 events.on<{ items: IProduct[] }>('products:changed', ({ items }) => {
 	if (!gallery || !catalogTemplate) return;
 
@@ -138,7 +125,7 @@ events.on<{ items: IProduct[] }>('products:changed', ({ items }) => {
 	gallery.replaceChildren(...cards);
 });
 
-// 2. Нажали на карточку → выбираем товар
+// Нажали на карточку > выбираем товар
 events.on<{ id: string }>('product:select', ({ id }) => {
 	const product = productsModel.getItemById(id);
 	if (product) {
@@ -146,7 +133,7 @@ events.on<{ id: string }>('product:select', ({ id }) => {
 	}
 });
 
-// 3. В модели выбран новый товар → открываем модалку превью
+// В модели выбран новый товар > открываем модалку превью
 events.on<{ product: IProduct | null }>('products:selected', ({ product }) => {
 	if (!product || !previewTemplate) return;
 
@@ -159,7 +146,7 @@ events.on<{ product: IProduct | null }>('products:selected', ({ product }) => {
 	modal.open(content);
 });
 
-// 4. Нажали "Купить" на карточке каталога → добавляем в корзину
+// Нажали "Купить" на карточке каталога > добавляем в корзину
 events.on<{ id: string }>('product:add-to-basket', ({ id }) => {
 	const product = productsModel.getItemById(id);
 	if (!product) return;
@@ -167,7 +154,7 @@ events.on<{ id: string }>('product:add-to-basket', ({ id }) => {
 	basketModel.addItem(product);
 });
 
-// 5. Нажали "Купить / Удалить" в модалке превью
+// Нажали "Купить / Удалить" в модалке превью
 events.on<{ id: string }>('product:toggle-from-preview', ({ id }) => {
 	const product = productsModel.getItemById(id);
 	if (!product) return;
@@ -179,19 +166,19 @@ events.on<{ id: string }>('product:toggle-from-preview', ({ id }) => {
 	}
 });
 
-// 6. Любое изменение корзины → обновляем счётчик
+// Любое изменение корзины > обновляем счётчик
 events.on<{ items: IProduct[] }>('basket:changed', ({ items }) => {
 	if (basketCounter) {
 		basketCounter.textContent = String(items.length);
 	}
 });
 
-// 7. Клик по иконке корзины → открыть корзину
+// Клик по иконке корзины > открыть корзину
 basketButton?.addEventListener('click', () => {
 	openBasket();
 });
 
-// 8. Нажали «Оформить» в корзине → открыть шаг 1 (способ оплаты + адрес)
+// Нажали «Оформить» в корзине > открыть шаг 1 (способ оплаты + адрес)
 events.on('basket:submit', () => {
 	if (!orderTemplate) return;
 
@@ -205,17 +192,17 @@ events.on('basket:submit', () => {
 	modal.open(content);
 });
 
-// 9. Изменение способа оплаты
+// Изменение способа оплаты
 events.on<{ payment: 'card' | 'cash' }>('order:change-payment', ({ payment }) => {
 	buyerModel.setData({ payment });
 });
 
-// 10. Изменение адреса
+// Изменение адреса
 events.on<{ address: string }>('order:change-address', ({ address }) => {
 	buyerModel.setData({ address });
 });
 
-// 11. Первый шаг формы успешно пройден → открыть шаг 2 (Email + телефон)
+// Первый шаг формы успешно пройден > открыть шаг 2 (Email + телефон)
 events.on('order:submit-step1', () => {
 	if (!contactsTemplate) return;
 
@@ -229,17 +216,17 @@ events.on('order:submit-step1', () => {
 	modal.open(content);
 });
 
-// 12. Изменение email
+// Изменение email
 events.on<{ email: string }>('order:change-email', ({ email }) => {
 	buyerModel.setData({ email });
 });
 
-// 13. Изменение телефона
+// Изменение телефона
 events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
 	buyerModel.setData({ phone });
 });
 
-// 14. Второй шаг формы успешно пройден → отправляем заказ на сервер
+// Второй шаг формы успешно пройден > отправляем заказ на сервер
 events.on('order:submit-step2', () => {
 	if (!successTemplate) return;
 
@@ -294,7 +281,7 @@ events.on('order:submit-step2', () => {
 		});
 });
 
-// 15. Кнопка «За новыми покупками!» в окне успеха
+// Кнопка «За новыми покупками!» в окне успеха
 events.on('success:close', () => {
 	modal.close();
 });

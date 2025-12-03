@@ -17,7 +17,7 @@ export class CardCatalog extends BaseCard {
 		// клик по кнопке "Купить" — добавить в корзину
 		if (this.buttonElement) {
 			this.buttonElement.addEventListener('click', (event) => {
-				event.stopPropagation(); // чтобы не открывалось превью
+				event.stopPropagation(); 
 				if (this.buttonElement?.disabled) return; // если "Недоступно" — ничего не делаем
 
 				events.emit('product:add-to-basket', { id: this.id });
@@ -43,7 +43,6 @@ export class CardCatalog extends BaseCard {
 			// сбрасываем старые классы и добавляем базовый
 			categoryElement.className = 'card__category';
 
-			// ЯВНО говорим TS, что categoryMap — это Record<string, string>
 			const map = categoryMap as Record<string, string>;
 			const categoryClass = map[data.category];
 

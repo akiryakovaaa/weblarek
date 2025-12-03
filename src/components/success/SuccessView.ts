@@ -14,7 +14,6 @@ export class SuccessView {
 			(container.querySelector('button[type="button"]') as HTMLButtonElement) ||
 			(container.querySelector('button') as HTMLButtonElement);
 
-		// Элемент с текстом "Списано ... синапсов"
 		this.descriptionElement =
 			(this.container.querySelector('.success__description') as HTMLElement) ||
 			(this.container.querySelector('.modal__description') as HTMLElement) ||
