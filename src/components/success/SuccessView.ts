@@ -14,7 +14,7 @@ export class SuccessView {
 			(container.querySelector('button[type="button"]') as HTMLButtonElement) ||
 			(container.querySelector('button') as HTMLButtonElement);
 
-		// Элемент с текстом "Списано ... синапсов" (если нужно обновлять текст)
+		// Элемент с текстом "Списано ... синапсов"
 		this.descriptionElement =
 			(this.container.querySelector('.success__description') as HTMLElement) ||
 			(this.container.querySelector('.modal__description') as HTMLElement) ||
@@ -23,16 +23,18 @@ export class SuccessView {
 		// Навешиваем обработчик на кнопку
 		if (this.button) {
 			this.button.addEventListener('click', () => {
-				// сообщаем презентеру, что пользователь хочет вернуться к покупкам
-				events.emit('order:success-close', {});
+				// Сообщаем презентеру, что пользователь хочет вернуться к покупкам
+				events.emit('success:close', {});
 			});
 		}
 	}
 
-	// totalText — строка с суммой, которую можно показать в окне успеха
-	render(totalText?: string) {
-		if (this.descriptionElement && totalText) {
-			this.descriptionElement.textContent = totalText;
+	/**
+	 * total — сумма заказа (в синапсах)
+	 */
+	render(total?: number): HTMLElement {
+		if (this.descriptionElement && typeof total === 'number') {
+			this.descriptionElement.textContent = `Списано ${total} синапсов`;
 		}
 		return this.container;
 	}

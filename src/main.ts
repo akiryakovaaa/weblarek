@@ -60,7 +60,7 @@ const basketView = basketTemplate
 	: null;
 
 // =======================
-//   API
+//   API и загрузка каталога
 // =======================
 
 const api = new Api(API_URL);
@@ -105,7 +105,8 @@ function openBasket() {
 		deleteBtn.setAttribute('aria-label', 'Удалить из корзины');
 		deleteBtn.addEventListener('click', () => {
 			basketModel.removeItem(item);
-			openBasket(); // перерисовываем корзину после удаления
+			// перерисуем корзину после удаления
+			openBasket();
 		});
 
 		li.append(indexSpan, titleSpan, priceSpan, deleteBtn);
@@ -242,18 +243,26 @@ events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
 events.on('order:submit-step2', () => {
 	if (!successTemplate) return;
 
+	// товары и сумма заказа
 	const items = basketModel.getItems();
 	const total = basketModel.getTotal();
 
-	const buyerData =
-		(buyerModel as any).getData?.() ??
-		({
-			payment: (buyerModel as any).payment,
-			address: (buyerModel as any).address,
-			email: (buyerModel as any).email,
-			phone: (buyerModel as any).phone,
-		} as any);
+	// аккуратно берём данные покупателя из модели
+	const buyerData = buyerModel.getData();
 
+	// type guard — проверяем, что все поля заполнены
+	if (
+		!buyerData.payment ||                // null не пройдёт
+		!buyerData.address.trim() ||
+		!buyerData.email.trim() ||
+		!buyerData.phone.trim()
+	) {
+		console.error('Заполнены не все данные покупателя', buyerData);
+		return;
+	}
+
+	// здесь TypeScript уже понимает, что:
+	// payment: TPayment, address/email/phone: string
 	const order: IOrder = {
 		items: items.map((item) => item.id),
 		total,
@@ -265,30 +274,17 @@ events.on('order:submit-step2', () => {
 
 	larekApi
 		.createOrder(order)
-		.then((data) => {
+		.then(() => {
 			const element = successTemplate.content.firstElementChild!.cloneNode(
 				true
 			) as HTMLElement;
 
 			const successView = new SuccessView(element);
-			// SuccessView ждёт строку, а не number:
-			const totalText = `Списано ${data.total} синапсов`;
-			const content = successView.render(totalText);
+			const content = successView.render(total);
 
-			// очищаем корзину
+			// очищаем корзину и покупателя
 			basketModel.clear();
-
-			// очищаем данные покупателя
-			if ((buyerModel as any).clear) {
-				(buyerModel as any).clear();
-			} else if ((buyerModel as any).setData) {
-				(buyerModel as any).setData({
-					payment: null,
-					address: '',
-					email: '',
-					phone: '',
-				});
-			}
+			buyerModel.clear();
 
 			modal.open(content);
 		})
@@ -299,6 +295,6 @@ events.on('order:submit-step2', () => {
 });
 
 // 15. Кнопка «За новыми покупками!» в окне успеха
-events.on('order:success-close', () => {
+events.on('success:close', () => {
 	modal.close();
 });
