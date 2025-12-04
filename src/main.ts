@@ -8,8 +8,8 @@ import { CardCatalog } from './components/cards/CardCatalog';
 import { CardPreview } from './components/cards/CardPreview';
 import { BasketView } from './components/basket/BasketView';
 import { BasketItemView } from './components/basket/BasketItemView';
-import { OrderFormStep1 } from './components/forms/OrderFormStep1';
-import { OrderFormStep2 } from './components/forms/OrderFormStep2';
+import { FormAdressDelivery } from './components/forms/FormAdressDelivery';
+import { FormContact } from './components/forms/FormContact';
 import { SuccessView } from './components/success/SuccessView';
 
 import { Modal } from './components/base/Modal';
@@ -52,6 +52,7 @@ const basketView = basketTemplate
 	  )
 	: null;
 
+// страница: витрина + иконка корзины + счётчик
 const page = new Page();
 
 // превью товара — один экземпляр
@@ -63,18 +64,18 @@ const previewCard = previewTemplate
 	  )
 	: null;
 
-// форма с доставкой
+// форма: адрес и способ доставки
 const deliveryForm = orderTemplate
-	? new OrderFormStep1(
+	? new FormAdressDelivery(
 			orderTemplate.content.firstElementChild!.cloneNode(
 				true
 			) as HTMLElement
 	  )
 	: null;
 
-// форма с контактами
+// форма: контакты покупателя
 const contactsForm = contactsTemplate
-	? new OrderFormStep2(
+	? new FormContact(
 			contactsTemplate.content.firstElementChild!.cloneNode(
 				true
 			) as HTMLElement
@@ -108,6 +109,7 @@ larekApi
 
 function openBasket() {
 	if (!basketView) return;
+
 	const content = basketView.render();
 	modal.open(content);
 }
@@ -153,7 +155,7 @@ events.on<{ id: string }>('product:toggle-from-preview', ({ id }) => {
 	const product = productsModel.getItemById(id);
 	if (!product) return;
 
-	// 🔒 защита: товар без цены/«бесценно» нельзя добавлять в корзину
+	// защита: товар без цены/«бесценно» нельзя добавлять в корзину
 	if (product.price === null) {
 		console.warn(
 			'Попытка добавить в корзину товар без цены — операция запрещена'
@@ -178,12 +180,15 @@ events.on<{ id: string }>('basket:item-remove', ({ id }) => {
 });
 
 events.on<{ items: IProduct[] }>('basket:changed', ({ items }) => {
+	// счётчик в шапке
 	page.setBasketCounter(items.length);
 
+	// кнопка в превью
 	if (previewCard) {
 		previewCard.updateButton(items);
 	}
 
+	// список и сумма в окне корзины
 	if (basketView) {
 		const itemNodes = items.map((item, index) => {
 			const view = new BasketItemView();
@@ -195,10 +200,12 @@ events.on<{ items: IProduct[] }>('basket:changed', ({ items }) => {
 	}
 });
 
+// «открыть корзину» приходит от Page
 events.on('basket:open', () => {
 	openBasket();
 });
 
+// нажали «Оформить» в корзине
 events.on('basket:submit', () => {
 	if (!deliveryForm) return;
 
@@ -208,19 +215,13 @@ events.on('basket:submit', () => {
 
 // -------- ПРЕЗЕНТЕР: ФОРМЫ --------
 
+// изменения данных покупателя → кладём в модель
 events.on<{ payment: 'card' | 'cash' }>('order:change-payment', ({ payment }) => {
 	buyerModel.setData({ payment });
 });
 
 events.on<{ address: string }>('order:change-address', ({ address }) => {
 	buyerModel.setData({ address });
-});
-
-events.on('order:submit-step1', () => {
-	if (!contactsForm) return;
-
-	const content = contactsForm.render();
-	modal.open(content);
 });
 
 events.on<{ email: string }>('order:change-email', ({ email }) => {
@@ -231,6 +232,38 @@ events.on<{ phone: string }>('order:change-phone', ({ phone }) => {
 	buyerModel.setData({ phone });
 });
 
+// модель покупателя изменилась → валидируем и обновляем формы
+events.on('buyer:changed', () => {
+	const errors = buyerModel.validate();
+
+	if (deliveryForm) {
+		const canSubmit = !errors.payment && !errors.address;
+		const errorMessage = errors.payment || errors.address || '';
+		deliveryForm.setValidationState({
+			canSubmit,
+			errorMessage,
+		});
+	}
+
+	if (contactsForm) {
+		const canSubmit = !errors.email && !errors.phone;
+		const errorMessage = errors.email || errors.phone || '';
+		contactsForm.setValidationState({
+			canSubmit,
+			errorMessage,
+		});
+	}
+});
+
+// первый шаг формы успешно пройден → открываем шаг 2
+events.on('order:submit-step1', () => {
+	if (!contactsForm) return;
+
+	const content = contactsForm.render();
+	modal.open(content);
+});
+
+// второй шаг формы успешно пройден → отправляем заказ
 events.on('order:submit-step2', () => {
 	if (!successView) return;
 
@@ -238,6 +271,7 @@ events.on('order:submit-step2', () => {
 	const total = basketModel.getTotal();
 	const buyerData = buyerModel.getData();
 
+	// простая проверка на заполненность перед отправкой
 	if (
 		!buyerData.payment ||
 		!buyerData.address.trim() ||
@@ -272,6 +306,7 @@ events.on('order:submit-step2', () => {
 
 			modal.open(content);
 
+			// очищаем корзину и данные покупателя
 			basketModel.clear();
 			buyerModel.clear();
 		})
@@ -279,4 +314,9 @@ events.on('order:submit-step2', () => {
 			console.error('Ошибка при оформлении заказа:', error);
 			alert('Не удалось оформить заказ, попробуйте ещё раз позже');
 		});
+});
+
+// кнопка «За новыми покупками!» в окне успеха
+events.on('success:close', () => {
+	modal.close();
 });

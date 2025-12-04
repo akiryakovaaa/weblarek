@@ -1,7 +1,7 @@
 import { BaseForm } from '../base/BaseForm';
 import { events } from '../base/Events';
 
-export class OrderFormStep1 extends BaseForm {
+export class FormAdressDelivery extends BaseForm {
 	private paymentButtons: NodeListOf<HTMLButtonElement>;
 	private addressInput: HTMLInputElement;
 	private submitButton: HTMLButtonElement;
