@@ -1,109 +1,108 @@
 import { BaseForm } from '../base/BaseForm';
 import { events } from '../base/Events';
 
-type OrderStep1Errors = {
-  address?: string;
-  payment?: string;
-  // если в модели есть ещё поля — добавь сюда
-};
-
 export class OrderFormStep1 extends BaseForm {
-  private paymentButtons: NodeListOf<HTMLButtonElement>;
-  private addressInput: HTMLInputElement;
-  private submitButton: HTMLButtonElement;
-  private errorElement: HTMLElement;
+	private paymentButtons: NodeListOf<HTMLButtonElement>;
+	private addressInput: HTMLInputElement;
+	private submitButton: HTMLButtonElement;
+	private errorElement: HTMLElement;
 
-  // нужно только для подсветки активной кнопки
-  private selectedPayment: 'card' | 'cash' | null = null;
+	private selectedPayment: 'card' | 'cash' | null = null;
 
-  // объект ошибок, который приходит из модели через presenter
-  private errors: OrderStep1Errors = {};
+	constructor(container: HTMLElement) {
+		super(container);
 
-  constructor(container: HTMLElement) {
-    super(container);
+		// берём элементы именно из formElement
+		this.paymentButtons =
+			this.formElement.querySelectorAll<HTMLButtonElement>('.button_alt');
+		this.addressInput =
+			this.formElement.querySelector<HTMLInputElement>('input[name="address"]')!;
+		this.submitButton =
+			this.formElement.querySelector<HTMLButtonElement>('.order__button')!;
+		this.errorElement =
+			this.formElement.querySelector<HTMLElement>('.form__errors')!;
 
-    // берём элементы именно из formElement
-    this.paymentButtons =
-      this.formElement.querySelectorAll<HTMLButtonElement>('.button_alt');
-    this.addressInput =
-      this.formElement.querySelector<HTMLInputElement>('input[name="address"]')!;
-    this.submitButton =
-      this.formElement.querySelector<HTMLButtonElement>('.order__button')!;
-    this.errorElement =
-      this.formElement.querySelector<HTMLElement>('.form__errors')!;
+		// если в разметке уже есть активная кнопка оплаты — считаем её выбранной
+		const activePaymentButton = Array.from(this.paymentButtons).find((btn) =>
+			btn.classList.contains('button_alt-active')
+		);
+		if (activePaymentButton) {
+			const name = activePaymentButton.getAttribute('name');
+			this.selectedPayment = name === 'cash' ? 'cash' : 'card';
+		}
 
-    // выбор способа оплаты
-    this.paymentButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const name = button.getAttribute('name');
-        const payment: 'card' | 'cash' = name === 'cash' ? 'cash' : 'card';
+		// стартовое состояние кнопки "Далее"
+		this.updateSubmitState();
 
-        this.selectedPayment = payment;
+		// выбор способа оплаты
+		this.paymentButtons.forEach((button) => {
+			button.addEventListener('click', () => {
+				const name = button.getAttribute('name');
+				const payment: 'card' | 'cash' = name === 'cash' ? 'cash' : 'card';
 
-        // визуально подсветить выбранную кнопку
-        this.paymentButtons.forEach((b) =>
-          b.classList.remove('button_alt-active')
-        );
-        button.classList.add('button_alt-active');
+				this.selectedPayment = payment;
 
-        // сообщаем презентеру об изменении модели покупателя
-        events.emit('order:change-payment', { payment });
-      });
-    });
+				// визуальное выделение
+				this.paymentButtons.forEach((b) =>
+					b.classList.remove('button_alt-active')
+				);
+				button.classList.add('button_alt-active');
 
-    // изменение адреса
-    this.addressInput.addEventListener('input', () => {
-      events.emit('order:change-address', {
-        address: this.addressInput.value.trim(),
-      });
-    });
+				// сообщаем презентеру
+				events.emit('order:change-payment', { payment });
 
-    // сюда presenter будет присылать ошибки из модели покупателя
-    // (нужно в main.ts после валидации вызвать events.emit('order:step1-errors', errors))
-    events.on<OrderStep1Errors>('order:step1-errors', (errors) => {
-      this.errors = errors;
-      this.updateFromErrors();
-    });
+				// пересчитываем доступность кнопки
+				this.updateSubmitState();
+			});
+		});
 
-    // отправка формы (кнопка "Далее")
-    this.formElement.addEventListener('submit', (event) => {
-      event.preventDefault();
+		// изменение адреса
+		this.addressInput.addEventListener('input', () => {
+			events.emit('order:change-address', {
+				address: this.addressInput.value.trim(),
+			});
+			this.updateSubmitState();
+		});
 
-      if (!this.canSubmit()) {
-        this.showError();
-        return;
-      }
+		// отправка формы (кнопка "Далее")
+		this.formElement.addEventListener('submit', (event) => {
+			event.preventDefault();
 
-      this.errorElement.textContent = '';
-      events.emit('order:submit-step1', {});
-    });
-  }
+			if (!this.canSubmit()) {
+				this.showError();
+				return;
+			}
 
-  // можно ли перейти дальше? — смотрим только на ошибки из модели
-  private canSubmit(): boolean {
-    return !this.errors.address && !this.errors.payment;
-  }
+			this.errorElement.textContent = '';
+			events.emit('order:submit-step1', {});
+		});
+	}
 
-  // обновляем кнопку и текст ошибки
-  private updateFromErrors(): void {
-    const ok = this.canSubmit();
-    this.submitButton.disabled = !ok;
+	// можно ли перейти дальше?
+	private canSubmit(): boolean {
+		const hasAddress = this.addressInput.value.trim().length > 0;
+		const hasPayment = this.selectedPayment !== null;
+		return hasAddress && hasPayment;
+	}
 
-    if (!ok) {
-      this.showError();
-    } else {
-      this.errorElement.textContent = '';
-    }
-  }
+	// включить/выключить кнопку "Далее"
+	private updateSubmitState(): void {
+		const ok = this.canSubmit();
+		this.submitButton.disabled = !ok;
 
-  // показ сообщения об ошибке
-  private showError(): void {
-    if (this.errors.address) {
-      this.errorElement.textContent = this.errors.address;
-    } else if (this.errors.payment) {
-      this.errorElement.textContent = this.errors.payment;
-    } else {
-      this.errorElement.textContent = '';
-    }
-  }
+		if (ok) {
+			this.errorElement.textContent = '';
+		}
+	}
+
+	// показать текст ошибки под кнопкой
+	private showError(): void {
+		if (!this.addressInput.value.trim()) {
+			this.errorElement.textContent = 'Необходимо указать адрес';
+		} else if (!this.selectedPayment) {
+			this.errorElement.textContent = 'Выберите способ оплаты';
+		} else {
+			this.errorElement.textContent = '';
+		}
+	}
 }

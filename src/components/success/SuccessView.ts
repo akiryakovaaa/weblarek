@@ -8,7 +8,6 @@ export class SuccessView {
 	constructor(container: HTMLElement) {
 		this.container = container;
 
-		// Кнопка "За новыми покупками!"
 		this.button =
 			(container.querySelector('.success__button') as HTMLButtonElement) ||
 			(container.querySelector('button[type="button"]') as HTMLButtonElement) ||
@@ -19,10 +18,8 @@ export class SuccessView {
 			(this.container.querySelector('.modal__description') as HTMLElement) ||
 			null;
 
-		// Навешиваем обработчик на кнопку
 		if (this.button) {
 			this.button.addEventListener('click', () => {
-				// Сообщаем презентеру, что пользователь хочет вернуться к покупкам
 				events.emit('success:close', {});
 			});
 		}
@@ -31,10 +28,14 @@ export class SuccessView {
 	/**
 	 * total — сумма заказа (в синапсах)
 	 */
-	render(total?: number): HTMLElement {
-		if (this.descriptionElement && typeof total === 'number') {
-			this.descriptionElement.textContent = `Списано ${total} синапсов`;
-		}
-		return this.container;
+	render(total: number = 0): HTMLElement {
+	const priceElement = this.container.querySelector('.order-success__description');
+
+	if (priceElement) {
+		priceElement.textContent = `Списано ${total} синапсов`;
 	}
+
+	return this.container;
+}
+
 }

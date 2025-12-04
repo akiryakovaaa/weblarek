@@ -17,7 +17,7 @@ export class CardCatalog extends BaseCard {
 		// клик по кнопке "Купить" — добавить в корзину
 		if (this.buttonElement) {
 			this.buttonElement.addEventListener('click', (event) => {
-				event.stopPropagation(); 
+				event.stopPropagation();
 				if (this.buttonElement?.disabled) return; // если "Недоступно" — ничего не делаем
 
 				events.emit('product:add-to-basket', { id: this.id });
@@ -28,19 +28,16 @@ export class CardCatalog extends BaseCard {
 	render(data: IProduct): HTMLElement {
 		this.id = data.id;
 
-		// базовые поля карточки
 		this.title = data.title;
 		this.price = data.price;
 		this.image = `${CDN_URL}/${data.image}`;
 		this.category = data.category;
 
-		// ----- ЦВЕТНАЯ плашка категории -----
 		const categoryElement = this.container.querySelector(
 			'.card__category'
 		) as HTMLElement | null;
 
 		if (categoryElement) {
-			// сбрасываем старые классы и добавляем базовый
 			categoryElement.className = 'card__category';
 
 			const map = categoryMap as Record<string, string>;
@@ -50,11 +47,10 @@ export class CardCatalog extends BaseCard {
 				categoryElement.classList.add(categoryClass);
 			}
 
-			// текст плашки
 			categoryElement.textContent = data.category;
 		}
 
-		// ----- Кнопка "Купить" / "Недоступно" -----
+		// блокируем товар без цены
 		if (this.buttonElement) {
 			if (data.price === null) {
 				this.setButtonDisabled(true, 'Недоступно');

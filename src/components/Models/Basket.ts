@@ -14,14 +14,21 @@ export class Basket {
 
 	// Удалить товар
 	removeItem(item: IProduct): void {
-		this.items = this.items.filter((i) => i.id !== item.id);
-		this.emitChanged();
+		const newItems = this.items.filter((i) => i.id !== item.id);
+
+		// чтобы не эмитить событие, если ничего не изменилось
+		if (newItems.length !== this.items.length) {
+			this.items = newItems;
+			this.emitChanged();
+		}
 	}
 
 	// Очистить корзину
 	clear(): void {
-		this.items = [];
-		this.emitChanged();
+		if (this.items.length > 0) {
+			this.items = [];
+			this.emitChanged();
+		}
 	}
 
 	// Получить товары
@@ -42,12 +49,12 @@ export class Basket {
 		return this.items.length;
 	}
 
-	// Есть ли товар в корзине
+	// Проверка наличия товара
 	hasItem(id: string): boolean {
 		return this.items.some((item) => item.id === id);
 	}
 
-	// Служебный метод для события
+	// Вспомогательный метод — сообщает презентеру об изменении корзины
 	private emitChanged(): void {
 		events.emit('basket:changed', {
 			items: this.items,
