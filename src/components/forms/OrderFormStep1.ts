@@ -7,12 +7,10 @@ export class OrderFormStep1 extends BaseForm {
 	private submitButton: HTMLButtonElement;
 	private errorElement: HTMLElement;
 
-	private selectedPayment: 'card' | 'cash' | null = null;
-
 	constructor(container: HTMLElement) {
 		super(container);
 
-		// берём элементы именно из formElement
+		// элементы именно из formElement
 		this.paymentButtons =
 			this.formElement.querySelectorAll<HTMLButtonElement>('.button_alt');
 		this.addressInput =
@@ -22,17 +20,8 @@ export class OrderFormStep1 extends BaseForm {
 		this.errorElement =
 			this.formElement.querySelector<HTMLElement>('.form__errors')!;
 
-		// если в разметке уже есть активная кнопка оплаты — считаем её выбранной
-		const activePaymentButton = Array.from(this.paymentButtons).find((btn) =>
-			btn.classList.contains('button_alt-active')
-		);
-		if (activePaymentButton) {
-			const name = activePaymentButton.getAttribute('name');
-			this.selectedPayment = name === 'cash' ? 'cash' : 'card';
-		}
-
-		// стартовое состояние кнопки "Далее"
-		this.updateSubmitState();
+		// стартовое состояние — дальше идти нельзя
+		this.setSubmitAvailable(false);
 
 		// выбор способа оплаты
 		this.paymentButtons.forEach((button) => {
@@ -40,69 +29,50 @@ export class OrderFormStep1 extends BaseForm {
 				const name = button.getAttribute('name');
 				const payment: 'card' | 'cash' = name === 'cash' ? 'cash' : 'card';
 
-				this.selectedPayment = payment;
-
 				// визуальное выделение
 				this.paymentButtons.forEach((b) =>
 					b.classList.remove('button_alt-active')
 				);
 				button.classList.add('button_alt-active');
 
-				// сообщаем презентеру
+				// сообщаем презентеру, что поменялся способ оплаты
 				events.emit('order:change-payment', { payment });
-
-				// пересчитываем доступность кнопки
-				this.updateSubmitState();
 			});
 		});
 
 		// изменение адреса
 		this.addressInput.addEventListener('input', () => {
 			events.emit('order:change-address', {
-				address: this.addressInput.value.trim(),
+				address: this.addressInput.value,
 			});
-			this.updateSubmitState();
 		});
 
-		// отправка формы (кнопка "Далее")
+		// отправка формы (кнопка «Далее»)
 		this.formElement.addEventListener('submit', (event) => {
 			event.preventDefault();
-
-			if (!this.canSubmit()) {
-				this.showError();
-				return;
-			}
-
-			this.errorElement.textContent = '';
+			// просто говорим презентеру: "пользователь хочет перейти на шаг 2"
 			events.emit('order:submit-step1', {});
 		});
 	}
 
-	// можно ли перейти дальше?
-	private canSubmit(): boolean {
-		const hasAddress = this.addressInput.value.trim().length > 0;
-		const hasPayment = this.selectedPayment !== null;
-		return hasAddress && hasPayment;
+	/**
+	 * Обновить состояние кнопки «Далее» и текст ошибки.
+	 * Этот метод должен вызывать презентер после валидации модели Buyer.
+	 */
+	public setValidationState(options: {
+		canSubmit: boolean;
+		errorMessage?: string;
+	}): void {
+		this.setSubmitAvailable(options.canSubmit);
+		this.errorElement.textContent = options.errorMessage ?? '';
 	}
 
-	// включить/выключить кнопку "Далее"
-	private updateSubmitState(): void {
-		const ok = this.canSubmit();
-		this.submitButton.disabled = !ok;
-
-		if (ok) {
-			this.errorElement.textContent = '';
-		}
+	private setSubmitAvailable(value: boolean): void {
+		this.submitButton.disabled = !value;
 	}
 
-	// показать текст ошибки под кнопкой
-	private showError(): void {
-		if (!this.addressInput.value.trim()) {
-			this.errorElement.textContent = 'Необходимо указать адрес';
-		} else if (!this.selectedPayment) {
-			this.errorElement.textContent = 'Выберите способ оплаты';
-		} else {
-			this.errorElement.textContent = '';
-		}
+	// метод render без сложной логики — просто возвращает контейнер формы
+	render(): HTMLElement {
+		return this.container;
 	}
 }

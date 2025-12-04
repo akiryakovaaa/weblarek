@@ -58,12 +58,8 @@ export class CardPreview extends BaseCard {
 		}
 
 		// кнопка всегда заблокирована для бесплатного товара
-		if (this.buttonElement) {
-			if (this.isFree) {
-				this.setButtonDisabled(true, 'Недоступно');
-			} else {
-				this.setButtonDisabled(false, 'Купить');
-			}
+		if (this.buttonElement && this.isFree) {
+			this.setButtonDisabled(true, 'Недоступно');
 		}
 
 		return this.container;
