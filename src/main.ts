@@ -24,7 +24,6 @@ const productsModel = new Products();
 const basketModel = new Basket();
 const buyerModel = new Buyer();
 
-
 //   DOM и VIEW
 const gallery = document.querySelector<HTMLElement>('.gallery');
 const catalogTemplate =
@@ -45,13 +44,15 @@ const basketCounter =
 	document.querySelector<HTMLElement>('.header__basket-counter');
 const modal = new Modal();
 
+// текущая карточка превью, чтобы обновлять её кнопку из презентера
+let previewCard: CardPreview | null = null;
+
 // создаём view корзины из шаблона
 const basketView = basketTemplate
 	? new BasketView(
 			basketTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement
 	  )
 	: null;
-
 
 //   API и загрузка каталога
 const api = new Api(API_URL);
@@ -66,11 +67,10 @@ larekApi
 		console.error('Ошибка при загрузке каталога:', error);
 	});
 
-
-//   ВСПОМОГАТЕЛЬНОЕ: открыть корзину
 function openBasket() {
 	if (!basketView) return;
 
+	// Генерируем <li> элементы для корзины
 	const itemsNodes = basketModel.getItems().map((item, index) => {
 		const li = document.createElement('li');
 		li.classList.add('basket__item', 'card', 'card_compact');
@@ -92,10 +92,10 @@ function openBasket() {
 		deleteBtn.classList.add('basket__item-delete');
 		deleteBtn.type = 'button';
 		deleteBtn.setAttribute('aria-label', 'Удалить из корзины');
+
 		deleteBtn.addEventListener('click', () => {
 			basketModel.removeItem(item);
-			// перерисуем корзину после удаления
-			openBasket();
+			openBasket(); // Перерисовываем корзину
 		});
 
 		li.append(indexSpan, titleSpan, priceSpan, deleteBtn);
@@ -103,11 +103,16 @@ function openBasket() {
 	});
 
 	const total = basketModel.getTotal();
-	const content = basketView.render(itemsNodes, total);
+
+	// ---- Новые методы ----
+	basketView.setItems(itemsNodes);
+	basketView.setTotal(total);
+
+	// Render теперь ничего не принимает
+	const content = basketView.render();
 
 	modal.open(content);
 }
-
 
 //   ПРЕЗЕНТЕР (СОБЫТИЯ)
 // Каталог обновился > рендерим карточки
@@ -140,7 +145,9 @@ events.on<{ product: IProduct | null }>('products:selected', ({ product }) => {
 	const element = previewTemplate.content.firstElementChild!.cloneNode(
 		true
 	) as HTMLElement;
-	const previewCard = new CardPreview(element);
+
+	// запоминаем текущую карточку превью
+	previewCard = new CardPreview(element);
 
 	const content = previewCard.render(product);
 	modal.open(content);
@@ -166,10 +173,15 @@ events.on<{ id: string }>('product:toggle-from-preview', ({ id }) => {
 	}
 });
 
-// Любое изменение корзины > обновляем счётчик
+// Любое изменение корзины > обновляем счётчик и кнопку в превью
 events.on<{ items: IProduct[] }>('basket:changed', ({ items }) => {
 	if (basketCounter) {
 		basketCounter.textContent = String(items.length);
+	}
+
+	// если открыта модалка превью — обновляем текст кнопки
+	if (previewCard) {
+		previewCard.updateButton(items);
 	}
 });
 
@@ -239,7 +251,7 @@ events.on('order:submit-step2', () => {
 
 	// type guard — проверяем, что все поля заполнены
 	if (
-		!buyerData.payment ||                // null не пройдёт
+		!buyerData.payment || // null не пройдёт
 		!buyerData.address.trim() ||
 		!buyerData.email.trim() ||
 		!buyerData.phone.trim()

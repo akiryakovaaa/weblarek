@@ -5,8 +5,6 @@ import { CDN_URL } from '../../utils/constants';
 
 export class CardPreview extends BaseCard {
 	private id!: string;
-
-	// отдельный элемент для описания
 	private descriptionElement: HTMLElement | null;
 
 	constructor(container: HTMLElement) {
@@ -21,13 +19,10 @@ export class CardPreview extends BaseCard {
 			});
 		}
 
-		// слушаем изменение корзины — чтобы менять текст кнопки
-		events.on<{ items: IProduct[] }>('basket:changed', (payload) => {
-			this.updateButton(payload.items);
-		});
 	}
 
-	private updateButton(items: IProduct[]): void {
+	// делаем метод публичным, чтобы вызывать его из presenter
+	public updateButton(items: IProduct[]): void {
 		if (!this.buttonElement) return;
 
 		const isInBasket = items.some((item) => item.id === this.id);
@@ -47,12 +42,10 @@ export class CardPreview extends BaseCard {
 		this.category = data.category;
 		this.image = `${CDN_URL}/${data.image}`;
 
-		// пишем описание в свой элемент
 		if (this.descriptionElement) {
 			this.descriptionElement.textContent = data.description;
 		}
 
-		// при первом открытии по умолчанию показываем "Купить"
 		if (this.buttonElement) {
 			this.setButtonDisabled(false, 'Купить');
 		}
