@@ -53,7 +53,7 @@ export class FormAdressDelivery extends BaseForm {
 
 	/** обновление данных формы при buyer:changed */
 	updateFields(data: Partial<IBuyer>): void {
-		if (data.payment) {
+		if (data.payment !== undefined) {
 			this.payment = data.payment;
 			this.paymentButtons.forEach((b) =>
 				b.classList.toggle(
@@ -62,6 +62,11 @@ export class FormAdressDelivery extends BaseForm {
 				)
 			);
 		}
+		
+		if (data.payment === null) {
+   			this.paymentButtons.forEach((b) => b.classList.remove('button_alt-active'));
+		}
+
 
 		if (data.address !== undefined) {
 			this.address = data.address;

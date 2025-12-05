@@ -194,10 +194,7 @@ events.on('buyer:changed', () => {
 	const errors = buyerModel.validate();
 
 	// ----- обновляем форму доставки -----
-	deliveryForm.updateFields({
-		payment: data.payment,
-		address: data.address,
-	});
+	deliveryForm.updateFields(data);
 
 	deliveryForm.setValidationState({
 		canSubmit: !errors.payment && !errors.address,
@@ -205,10 +202,7 @@ events.on('buyer:changed', () => {
 	});
 
 	// ----- обновляем форму контактов -----
-	contactsForm.updateFields({
-		email: data.email,
-		phone: data.phone,
-	});
+	contactsForm.updateFields(data);
 
 	contactsForm.setValidationState({
 		canSubmit: !errors.email && !errors.phone,
@@ -251,7 +245,6 @@ events.on('order:submit-step2', () => {
 	larekApi
 		.createOrder(order)
 		.then((orderResult: IOrderResult) => {
-			console.log('SERVER ORDER RESPONSE:', orderResult);
 
 			// пробуем взять сумму из ответа сервера, иначе — локальную
 			const serverTotal =

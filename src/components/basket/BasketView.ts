@@ -53,8 +53,6 @@ export class BasketView {
 		} else {
 			this.container.style.height = 'auto';
 		}
-		// ограничиваем высоту, чтобы корзина не раздувалась на весь экран
-		this.container.style.maxHeight = '260px';
 
 		// ------ Кнопка "Оформить" ------
 		this.submitButton.disabled = isEmpty;
