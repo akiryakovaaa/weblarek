@@ -13,11 +13,9 @@ export class FormContact extends BaseForm {
     this.emailInput = container.querySelector('input[name="email"]')!;
     this.phoneInput = container.querySelector('input[name="phone"]')!;
 
-    // блок для текста ошибки под кнопкой (как в первой форме)
     this.errorElement =
       (container.querySelector('.form__errors') as HTMLElement | null) ?? null;
 
-    // Ищем кнопку "Оплатить"
     const submit =
       (container.querySelector('button[type="submit"]') as HTMLButtonElement | null) ||
       (container.querySelector('.order__button') as HTMLButtonElement | null);
@@ -28,22 +26,23 @@ export class FormContact extends BaseForm {
 
     this.submitButton = submit;
 
-    // --- локальная простая валидация: оба поля не пустые ---
+    // Локальная проверка заполненности полей
     const updateSubmitState = () => {
       const hasEmail = this.emailInput.value.trim().length > 0;
       const hasPhone = this.phoneInput.value.trim().length > 0;
 
       this.submitButton.disabled = !(hasEmail && hasPhone);
-      // локальная валидация без текста ошибки
+
       if (this.errorElement && this.submitButton.disabled) {
         this.errorElement.textContent = '';
       }
     };
 
-    // начальное состояние
+    // Инициализация состояния кнопки
     updateSubmitState();
 
-    // изменения email
+    // ----- события ввода -----
+
     this.emailInput.addEventListener('input', () => {
       events.emit('order:change-email', {
         email: this.emailInput.value,
@@ -51,7 +50,6 @@ export class FormContact extends BaseForm {
       updateSubmitState();
     });
 
-    // изменения телефона
     this.phoneInput.addEventListener('input', () => {
       events.emit('order:change-phone', {
         phone: this.phoneInput.value,
@@ -59,7 +57,7 @@ export class FormContact extends BaseForm {
       updateSubmitState();
     });
 
-    // отправка формы (по кнопке "Оплатить")
+    // ----- отправка формы -----
     this.formElement.addEventListener('submit', (event) => {
       event.preventDefault();
 
@@ -67,12 +65,36 @@ export class FormContact extends BaseForm {
         return;
       }
 
-      // оба поля заполнены → сообщаем презентеру
       events.emit('order:submit-step2', {});
     });
   }
 
-  // метод, который дергает presenter после валидации модели Buyer
+  /**
+   * Обновление данных формы (вызывается из presenter при buyer:changed)
+   */
+  public updateFields(data: { email?: string; phone?: string }) {
+    if (data.email !== undefined) {
+      this.emailInput.value = data.email;
+    }
+
+    if (data.phone !== undefined) {
+      this.phoneInput.value = data.phone;
+    }
+
+    // синхронизация состояния кнопки
+    const hasEmail = this.emailInput.value.trim().length > 0;
+    const hasPhone = this.phoneInput.value.trim().length > 0;
+
+    this.submitButton.disabled = !(hasEmail && hasPhone);
+
+    if (this.errorElement && this.submitButton.disabled) {
+      this.errorElement.textContent = '';
+    }
+  }
+
+  /**
+   * Установка состояния валидации от модели Buyer
+   */
   public setValidationState(options: { canSubmit: boolean; errorMessage?: string }) {
     const { canSubmit, errorMessage } = options;
 

@@ -1,4 +1,5 @@
 import { events } from '../base/Events';
+import { ensureElement } from '../../utils/utils';
 
 export class BasketView {
 	private container: HTMLElement;
@@ -11,9 +12,10 @@ export class BasketView {
 	constructor(container: HTMLElement) {
 		this.container = container;
 
-		this.listElement = container.querySelector('.basket__list')!;
-		this.totalElement = container.querySelector('.basket__price')!;
-		this.submitButton = container.querySelector('.basket__button')!;
+		// ищем элементы через утилиту из utils.ts
+		this.listElement = ensureElement<HTMLElement>('.basket__list', container);
+		this.totalElement = ensureElement<HTMLElement>('.basket__price', container);
+		this.submitButton = ensureElement<HTMLButtonElement>('.basket__button', container);
 
 		this.emptyElement = document.createElement('p');
 		this.emptyElement.classList.add('basket__empty');
@@ -22,6 +24,11 @@ export class BasketView {
 		this.submitButton.addEventListener('click', () => {
 			events.emit('basket:submit', {});
 		});
+
+		// начальное состояние: пустая корзина маленькой высоты,
+		// надпись "Корзина пуста" и неактивная кнопка "Оформить"
+		this.setItems([]);
+		this.setTotal(0);
 	}
 
 	// Устанавливаем элементы списка и состояние «корзина пуста»
@@ -29,15 +36,6 @@ export class BasketView {
 		this.listElement.replaceChildren(...items);
 
 		const isEmpty = items.length === 0;
-
-		// ------ Размер корзины ------
-		if (isEmpty) {
-			this.container.style.height = '220px';
-			this.container.style.maxHeight = '220px';
-		} else {
-			this.container.style.height = 'auto';
-			this.container.style.maxHeight = 'none';
-		}
 
 		// ------ Надпись "Корзина пуста" ------
 		if (isEmpty) {
@@ -47,6 +45,16 @@ export class BasketView {
 		} else if (this.listElement.contains(this.emptyElement)) {
 			this.emptyElement.remove();
 		}
+
+		// ------ Размер корзины ------
+		// компактная высота как на макете
+		if (isEmpty) {
+			this.container.style.height = '220px';
+		} else {
+			this.container.style.height = 'auto';
+		}
+		// ограничиваем высоту, чтобы корзина не раздувалась на весь экран
+		this.container.style.maxHeight = '260px';
 
 		// ------ Кнопка "Оформить" ------
 		this.submitButton.disabled = isEmpty;

@@ -1,68 +1,51 @@
-import { IBuyer } from '../../types';
+import { IBuyer, TPayment } from '../../types';
 import { events } from '../base/Events';
 
 export class Buyer {
-	private data: IBuyer = {
-		payment: null,
-		address: '',
-		email: '',
-		phone: '',
-	};
+  private payment: TPayment | null = null;
+  private address = '';
+  private email = '';
+  private phone = '';
 
-	/**
-	 * Устанавливает новые данные покупателя
-	 */
-	setData(update: Partial<IBuyer>): void {
-		this.data = { ...this.data, ...update };
+  constructor() {}
 
-		// событие: данные покупателя изменены
-		events.emit('buyer:changed', {
-			data: this.data,
-		});
-	}
+  setData(data: Partial<IBuyer>): void {
+    if (data.payment !== undefined) this.payment = data.payment;
+    if (data.address !== undefined) this.address = data.address;
+    if (data.email !== undefined) this.email = data.email;
+    if (data.phone !== undefined) this.phone = data.phone;
 
-	/**
-	 * Возвращает данные покупателя (строго типизированные)
-	 */
-	getData(): IBuyer {
-		return this.data;
-	}
+    // ВАЖНО: сообщаем, что модель изменилась
+    events.emit('buyer:changed', {});
+  }
 
-	/**
-	 * Полная очистка данных покупателя
-	 */
-	clear(): void {
-		this.data = {
-			payment: null,
-			address: '',
-			email: '',
-			phone: '',
-		};
+  getData(): IBuyer {
+    return {
+      payment: this.payment!,
+      address: this.address,
+      email: this.email,
+      phone: this.phone,
+    };
+  }
 
-		events.emit('buyer:changed', {
-			data: this.data,
-		});
-	}
+  clear(): void {
+    this.payment = null;
+    this.address = '';
+    this.email = '';
+    this.phone = '';
 
-	/**
-	 * Проверка корректности данных
-	 */
-	validate(): Record<string, string> {
-		const errors: Record<string, string> = {};
+    // ВАЖНО: сообщаем формам, что нужно себя очистить
+    events.emit('buyer:changed', {});
+  }
 
-		if (!this.data.payment) {
-			errors.payment = 'Не указан способ оплаты';
-		}
-		if (!this.data.address?.trim()) {
-			errors.address = 'Не указан адрес';
-		}
-		if (!this.data.email?.trim()) {
-			errors.email = 'Не указан email';
-		}
-		if (!this.data.phone?.trim()) {
-			errors.phone = 'Не указан телефон';
-		}
+  validate(): Record<string, string> {
+    const errors: Record<string, string> = {};
 
-		return errors;
-	}
+    if (!this.payment) errors.payment = 'Не выбран способ оплаты';
+    if (!this.address.trim()) errors.address = 'Укажите адрес';
+    if (!this.email.trim()) errors.email = 'Укажите email';
+    if (!this.phone.trim()) errors.phone = 'Укажите телефон';
+
+    return errors;
+  }
 }

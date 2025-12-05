@@ -2,62 +2,51 @@ import { IProduct } from '../../types';
 import { events } from '../base/Events';
 
 export class Basket {
-	private items: IProduct[] = [];
+	private items: IProduct[]; // хранение товаров корзины
 
-	// Добавить товар
-	addItem(item: IProduct): void {
-		if (!this.hasItem(item.id)) {
-			this.items.push(item);
-			this.emitChanged();
-		}
+	constructor() {
+		// Корзина всегда должна начинаться пустой
+		this.items = [];
 	}
 
-	// Удалить товар
-	removeItem(item: IProduct): void {
-		const newItems = this.items.filter((i) => i.id !== item.id);
-
-		// чтобы не эмитить событие, если ничего не изменилось
-		if (newItems.length !== this.items.length) {
-			this.items = newItems;
-			this.emitChanged();
-		}
-	}
-
-	// Очистить корзину
-	clear(): void {
-		if (this.items.length > 0) {
-			this.items = [];
-			this.emitChanged();
-		}
-	}
-
-	// Получить товары
+	// Получить список товаров корзины
 	getItems(): IProduct[] {
 		return this.items;
 	}
 
-	// Общая сумма
+	// Проверка наличия товара в корзине
+	hasItem(id: string): boolean {
+		return this.items.some((item) => item.id === id);
+	}
+
+	// Добавить товар
+	addItem(item: IProduct): void {
+		this.items.push(item);
+		events.emit('basket:changed', { items: this.items });
+	}
+
+	// Удалить товар
+	removeItem(item: IProduct): void {
+		this.items = this.items.filter((i) => i.id !== item.id);
+		events.emit('basket:changed', { items: this.items });
+	}
+
+	// Очистить корзину
+	clear(): void {
+		this.items = [];
+		events.emit('basket:changed', { items: this.items });
+	}
+
+	// Получить суммарную стоимость
 	getTotal(): number {
-		return this.items.reduce(
-			(sum, item) => sum + (item.price ?? 0),
-			0
-		);
+		return this.items.reduce((sum, item) => {
+			if (item.price === null) return sum;
+			return sum + item.price;
+		}, 0);
 	}
 
 	// Количество товаров
 	getCount(): number {
 		return this.items.length;
-	}
-
-	// Проверка наличия товара
-	hasItem(id: string): boolean {
-		return this.items.some((item) => item.id === id);
-	}
-
-	// Вспомогательный метод — сообщает презентеру об изменении корзины
-	private emitChanged(): void {
-		events.emit('basket:changed', {
-			items: this.items,
-		});
 	}
 }

@@ -1,78 +1,83 @@
 import { BaseForm } from '../base/BaseForm';
 import { events } from '../base/Events';
+import { IBuyer } from '../../types';
 
 export class FormAdressDelivery extends BaseForm {
+	private payment: 'card' | 'cash' | null = null;
+	private address = '';
+
 	private paymentButtons: NodeListOf<HTMLButtonElement>;
 	private addressInput: HTMLInputElement;
-	private submitButton: HTMLButtonElement;
 	private errorElement: HTMLElement;
+	private submitButton: HTMLButtonElement;
 
 	constructor(container: HTMLElement) {
 		super(container);
 
-		// элементы именно из formElement
 		this.paymentButtons =
 			this.formElement.querySelectorAll<HTMLButtonElement>('.button_alt');
 		this.addressInput =
 			this.formElement.querySelector<HTMLInputElement>('input[name="address"]')!;
-		this.submitButton =
-			this.formElement.querySelector<HTMLButtonElement>('.order__button')!;
 		this.errorElement =
 			this.formElement.querySelector<HTMLElement>('.form__errors')!;
+		this.submitButton =
+			this.formElement.querySelector<HTMLButtonElement>('.order__button')!;
 
-		// стартовое состояние — дальше идти нельзя
-		this.setSubmitAvailable(false);
+		// обработчики кнопок оплаты
+		this.paymentButtons.forEach((btn) => {
+			btn.addEventListener('click', () => {
+				const val = btn.getAttribute('name') === 'cash' ? 'cash' : 'card';
+				this.payment = val;
 
-		// выбор способа оплаты
-		this.paymentButtons.forEach((button) => {
-			button.addEventListener('click', () => {
-				const name = button.getAttribute('name');
-				const payment: 'card' | 'cash' = name === 'cash' ? 'cash' : 'card';
-
-				// визуальное выделение
 				this.paymentButtons.forEach((b) =>
 					b.classList.remove('button_alt-active')
 				);
-				button.classList.add('button_alt-active');
+				btn.classList.add('button_alt-active');
 
-				// сообщаем презентеру, что поменялся способ оплаты
-				events.emit('order:change-payment', { payment });
+				events.emit('order:change-payment', { payment: val });
 			});
 		});
 
-		// изменение адреса
+		// обработчик адреса
 		this.addressInput.addEventListener('input', () => {
-			events.emit('order:change-address', {
-				address: this.addressInput.value,
-			});
+			this.address = this.addressInput.value.trim();
+			events.emit('order:change-address', { address: this.address });
 		});
 
-		// отправка формы (кнопка «Далее»)
-		this.formElement.addEventListener('submit', (event) => {
-			event.preventDefault();
-			// просто говорим презентеру: "пользователь хочет перейти на шаг 2"
+		// отправка формы
+		this.formElement.addEventListener('submit', (e) => {
+			e.preventDefault();
 			events.emit('order:submit-step1', {});
 		});
 	}
 
-	/**
-	 * Обновить состояние кнопки «Далее» и текст ошибки.
-	 * Этот метод должен вызывать презентер после валидации модели Buyer.
-	 */
-	public setValidationState(options: {
+	/** обновление данных формы при buyer:changed */
+	updateFields(data: Partial<IBuyer>): void {
+		if (data.payment) {
+			this.payment = data.payment;
+			this.paymentButtons.forEach((b) =>
+				b.classList.toggle(
+					'button_alt-active',
+					b.getAttribute('name') === data.payment
+				)
+			);
+		}
+
+		if (data.address !== undefined) {
+			this.address = data.address;
+			this.addressInput.value = data.address;
+		}
+	}
+
+	/** установка состояния валидации */
+	setValidationState({
+		canSubmit,
+		errorMessage,
+	}: {
 		canSubmit: boolean;
-		errorMessage?: string;
+		errorMessage: string;
 	}): void {
-		this.setSubmitAvailable(options.canSubmit);
-		this.errorElement.textContent = options.errorMessage ?? '';
-	}
-
-	private setSubmitAvailable(value: boolean): void {
-		this.submitButton.disabled = !value;
-	}
-
-	// метод render без сложной логики — просто возвращает контейнер формы
-	render(): HTMLElement {
-		return this.container;
+		this.submitButton.disabled = !canSubmit;
+		this.errorElement.textContent = errorMessage;
 	}
 }

@@ -11,35 +11,27 @@ export class BasketItemView {
 	private id = '';
 
 	constructor() {
-		this.container = document.createElement('li');
-		this.container.classList.add('basket__item', 'card', 'card_compact');
+		// Получаем шаблон
+		const template = document.querySelector<HTMLTemplateElement>('#card-basket');
+		if (!template) {
+			throw new Error('Шаблон #card-basket не найден');
+		}
 
-		this.indexElement = document.createElement('span');
-		this.indexElement.classList.add('basket__item-index');
+		// Клонируем содержимое шаблона
+		this.container = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
 
-		this.titleElement = document.createElement('span');
-		this.titleElement.classList.add('card__title');
+		// Находим элементы
+		this.indexElement = this.container.querySelector('.basket__item-index')!;
+		this.titleElement = this.container.querySelector('.card__title')!;
+		this.priceElement = this.container.querySelector('.card__price')!;
+		this.deleteButton = this.container.querySelector('.basket__item-delete')!;
 
-		this.priceElement = document.createElement('span');
-		this.priceElement.classList.add('card__price');
-
-		this.deleteButton = document.createElement('button');
-		this.deleteButton.classList.add('basket__item-delete');
-		this.deleteButton.type = 'button';
-		this.deleteButton.setAttribute('aria-label', 'Удалить из корзины');
-
+		// Слушатель удаления
 		this.deleteButton.addEventListener('click', () => {
 			if (this.id) {
 				events.emit('basket:item-remove', { id: this.id });
 			}
 		});
-
-		this.container.append(
-			this.indexElement,
-			this.titleElement,
-			this.priceElement,
-			this.deleteButton
-		);
 	}
 
 	// индекс нужен для нумерации (1,2,3,...)
