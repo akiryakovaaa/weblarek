@@ -1,5 +1,6 @@
 import { IProduct } from '../../types';
 import { events } from '../base/Events';
+import { cloneTemplate } from '../../utils/utils';
 
 export class BasketItemView {
 	private container: HTMLElement;
@@ -11,22 +12,16 @@ export class BasketItemView {
 	private id = '';
 
 	constructor() {
-		// Получаем шаблон
-		const template = document.querySelector<HTMLTemplateElement>('#card-basket');
-		if (!template) {
-			throw new Error('Шаблон #card-basket не найден');
-		}
+		// клонируем шаблон через utils
+		this.container = cloneTemplate<HTMLElement>('#card-basket');
 
-		// Клонируем содержимое шаблона
-		this.container = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
-
-		// Находим элементы
+		// ищем внутренние DOM-элементы ТОЛЬКО внутри контейнера
 		this.indexElement = this.container.querySelector('.basket__item-index')!;
 		this.titleElement = this.container.querySelector('.card__title')!;
 		this.priceElement = this.container.querySelector('.card__price')!;
 		this.deleteButton = this.container.querySelector('.basket__item-delete')!;
 
-		// Слушатель удаления
+		// обработчик удаления из корзины
 		this.deleteButton.addEventListener('click', () => {
 			if (this.id) {
 				events.emit('basket:item-remove', { id: this.id });
@@ -34,14 +29,12 @@ export class BasketItemView {
 		});
 	}
 
-	// индекс нужен для нумерации (1,2,3,...)
-	render(product: IProduct, index: number): HTMLElement {
-		this.id = product.id;
+	render(item: IProduct, index: number): HTMLElement {
+		this.id = item.id;
 
 		this.indexElement.textContent = String(index + 1);
-		this.titleElement.textContent = product.title;
-		this.priceElement.textContent =
-			product.price === null ? 'Бесценно' : `${product.price} синапсов`;
+		this.titleElement.textContent = item.title;
+		this.priceElement.textContent = `${item.price ?? 0} синапсов`;
 
 		return this.container;
 	}
