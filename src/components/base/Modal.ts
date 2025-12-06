@@ -1,25 +1,27 @@
 import { events } from './Events';
+import { ensureElement } from '../../utils/utils';
 
 export class Modal {
   protected modalElement: HTMLElement;
   protected contentElement: HTMLElement;
 
   constructor() {
-    this.modalElement = document.querySelector('.modal')!;
-    this.contentElement = this.modalElement.querySelector('.modal__content')!;
+    // Используем ensureElement вместо document.querySelector
+    this.modalElement = ensureElement<HTMLElement>('.modal');
+    this.contentElement = ensureElement<HTMLElement>('.modal__content', this.modalElement);
 
     // закрытие по крестику
     const closeBtn = this.modalElement.querySelector('.modal__close');
     closeBtn?.addEventListener('click', () => {
-      this.close();                    // сразу закрываем
-      events.emit('modal:close', {});  // и шлём событие
+      this.close();
+      events.emit('modal:close', {});
     });
 
-    // закрытие по клику вне контента (по фону)
+    // закрытие по клику вне контента
     this.modalElement.addEventListener('click', (event) => {
       if (event.target === this.modalElement) {
-        this.close();                    // закрываем
-        events.emit('modal:close', {});  // и шлём событие
+        this.close();
+        events.emit('modal:close', {});
       }
     });
   }
@@ -27,7 +29,6 @@ export class Modal {
   open(content: HTMLElement) {
     this.contentElement.replaceChildren(content);
     this.modalElement.classList.add('modal_active');
-
     events.emit('modal:open', {});
   }
 
