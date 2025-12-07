@@ -15,7 +15,7 @@ export class Buyer {
     if (data.email !== undefined) this.email = data.email;
     if (data.phone !== undefined) this.phone = data.phone;
 
-    // ВАЖНО: сообщаем, что модель изменилась
+    // сообщаем, что модель изменилась
     events.emit('buyer:changed', {});
   }
 
@@ -34,7 +34,7 @@ export class Buyer {
     this.email = '';
     this.phone = '';
 
-    // ВАЖНО: сообщаем формам, что нужно себя очистить
+    // сообщаем формам, что нужно себя очистить
     events.emit('buyer:changed', {});
   }
 

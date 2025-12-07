@@ -12,7 +12,6 @@ export class CardPreview extends BaseCard {
 	constructor(container: HTMLElement) {
 		super(container);
 
-		// текст описания берём через утилиту, а не через querySelector
 		this.descriptionElement = ensureElement<HTMLElement>('.card__text', container);
 
 		// обработчик кнопки

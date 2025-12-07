@@ -7,7 +7,6 @@ export class Page {
 	private basketCounter: HTMLElement;
 
 	constructor() {
-		// Используем ensureElement вместо document.querySelector
 		this.gallery = ensureElement<HTMLElement>('.gallery');
 		this.basketButton = ensureElement<HTMLButtonElement>('.header__basket');
 		this.basketCounter = ensureElement<HTMLElement>('.header__basket-counter');

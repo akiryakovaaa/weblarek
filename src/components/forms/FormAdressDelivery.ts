@@ -15,7 +15,6 @@ export class FormAdressDelivery extends BaseForm {
 	constructor(container: HTMLElement) {
 		super(container);
 
-		// все обращения к DOM — только через утилиты
 		this.paymentButtons = ensureAllElements<HTMLButtonElement>(
 			'.button_alt',
 			this.formElement
