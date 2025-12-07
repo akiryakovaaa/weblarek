@@ -1,4 +1,5 @@
 import { events } from './Events';
+import { ensureElement } from '../../utils/utils';
 
 export abstract class BaseForm {
   protected container: HTMLElement;
@@ -7,19 +8,14 @@ export abstract class BaseForm {
   constructor(container: HTMLElement) {
     this.container = container;
 
-    // контейнер может быть самой <form>, а может обёрткой
     const form =
       container instanceof HTMLFormElement
         ? container
-        : (container.querySelector('form') as HTMLFormElement | null);
-
-    if (!form) {
-      throw new Error('Form element not found in BaseForm');
-    }
+        : ensureElement<HTMLFormElement>('form', container);
 
     this.formElement = form;
 
-    // общий обработчик (можно оставить, он не мешает)
+    // общий обработчик
     this.formElement.addEventListener('input', (event) => {
       const target = event.target as HTMLInputElement | HTMLTextAreaElement;
       if (!target.name) return;

@@ -2,22 +2,25 @@ import { BaseCard } from '../base/BaseCard';
 import { IProduct } from '../../types';
 import { events } from '../base/Events';
 import { CDN_URL } from '../../utils/constants';
+import { ensureElement } from '../../utils/utils';
 
 export class CardPreview extends BaseCard {
-	private id!: string;
-	private descriptionElement: HTMLElement | null;
-	private isFree: boolean = false; // товар "бесценно"
+	private id: string = '';
+	private descriptionElement: HTMLElement;
+	private isFree = false; // товар "бесценно"
 
 	constructor(container: HTMLElement) {
 		super(container);
 
-		this.descriptionElement = container.querySelector('.card__text');
+		// текст описания берём через утилиту, а не через querySelector
+		this.descriptionElement = ensureElement<HTMLElement>('.card__text', container);
 
 		// обработчик кнопки
-		if (this.buttonElement) {
-			this.buttonElement.addEventListener('click', () => {
-				// запрещаем покупку бесценного товара
-				if (this.isFree || this.buttonElement?.disabled) return;
+		const button = this.buttonElement;
+		if (button) {
+			button.addEventListener('click', () => {
+				// запрещаем покупку бесценного товара или при disabled
+				if (this.isFree || button.disabled) return;
 
 				events.emit('product:toggle-from-preview', { id: this.id });
 			});
@@ -26,7 +29,8 @@ export class CardPreview extends BaseCard {
 
 	// вызывается презентером
 	public updateButton(items: IProduct[]): void {
-		if (!this.buttonElement) return;
+		const button = this.buttonElement;
+		if (!button) return;
 
 		// если товар бесценный → кнопка всегда disabled
 		if (this.isFree) {
@@ -53,9 +57,7 @@ export class CardPreview extends BaseCard {
 		// запоминаем, что товар бесплатный
 		this.isFree = data.price === null;
 
-		if (this.descriptionElement) {
-			this.descriptionElement.textContent = data.description;
-		}
+		this.descriptionElement.textContent = data.description;
 
 		// кнопка всегда заблокирована для бесплатного товара
 		if (this.buttonElement && this.isFree) {

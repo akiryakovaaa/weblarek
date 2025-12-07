@@ -46,15 +46,14 @@ export class BasketView {
 			this.emptyElement.remove();
 		}
 
-		// ------ Размер корзины ------
-		// компактная высота как на макете
+		// Размер корзины
 		if (isEmpty) {
 			this.container.style.height = '220px';
 		} else {
 			this.container.style.height = 'auto';
 		}
 
-		// ------ Кнопка "Оформить" ------
+		//Кнопка "Оформить"
 		this.submitButton.disabled = isEmpty;
 
 		// модалка не скроллится

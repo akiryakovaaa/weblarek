@@ -1,41 +1,43 @@
 import { IProduct } from '../../types';
 import { events } from '../base/Events';
-import { cloneTemplate } from '../../utils/utils';
+import { cloneTemplate, ensureElement } from '../../utils/utils';
 
 export class BasketItemView {
-	private container: HTMLElement;
-	private indexElement: HTMLElement;
-	private titleElement: HTMLElement;
-	private priceElement: HTMLElement;
-	private deleteButton: HTMLButtonElement;
+  private container: HTMLElement;
+  private indexElement: HTMLElement;
+  private titleElement: HTMLElement;
+  private priceElement: HTMLElement;
+  private deleteButton: HTMLButtonElement;
 
-	private id = '';
+  private id = '';
 
-	constructor() {
-		// клонируем шаблон через utils
-		this.container = cloneTemplate<HTMLElement>('#card-basket');
+  constructor() {
+    // клонируем шаблон через утилиту
+    this.container = cloneTemplate<HTMLElement>('#card-basket');
 
-		// ищем внутренние DOM-элементы ТОЛЬКО внутри контейнера
-		this.indexElement = this.container.querySelector('.basket__item-index')!;
-		this.titleElement = this.container.querySelector('.card__title')!;
-		this.priceElement = this.container.querySelector('.card__price')!;
-		this.deleteButton = this.container.querySelector('.basket__item-delete')!;
+    // находим внутренние DOM-элементы
+    this.indexElement = ensureElement<HTMLElement>('.basket__item-index', this.container);
+    this.titleElement = ensureElement<HTMLElement>('.card__title', this.container);
+    this.priceElement = ensureElement<HTMLElement>('.card__price', this.container);
+    this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-		// обработчик удаления из корзины
-		this.deleteButton.addEventListener('click', () => {
-			if (this.id) {
-				events.emit('basket:item-remove', { id: this.id });
-			}
-		});
-	}
+    // обработчик удаления из корзины
+    this.deleteButton.addEventListener('click', () => {
+      if (this.id) {
+        events.emit('basket:item-remove', { id: this.id });
+      }
+    });
+  }
 
-	render(item: IProduct, index: number): HTMLElement {
-		this.id = item.id;
+  // индекс нужен для нумерации (1,2,3,...)
+  render(product: IProduct, index: number): HTMLElement {
+    this.id = product.id;
 
-		this.indexElement.textContent = String(index + 1);
-		this.titleElement.textContent = item.title;
-		this.priceElement.textContent = `${item.price ?? 0} синапсов`;
+    this.indexElement.textContent = String(index + 1);
+    this.titleElement.textContent = product.title;
+    this.priceElement.textContent =
+      product.price === null ? 'Бесценно' : `${product.price} синапсов`;
 
-		return this.container;
-	}
+    return this.container;
+  }
 }

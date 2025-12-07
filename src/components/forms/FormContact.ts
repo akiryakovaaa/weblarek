@@ -1,5 +1,7 @@
 import { BaseForm } from '../base/BaseForm';
 import { events } from '../base/Events';
+import { ensureElement } from '../../utils/utils';
+import { IBuyer } from '../../types';
 
 export class FormContact extends BaseForm {
   private emailInput: HTMLInputElement;
@@ -10,102 +12,52 @@ export class FormContact extends BaseForm {
   constructor(container: HTMLElement) {
     super(container);
 
-    this.emailInput = container.querySelector('input[name="email"]')!;
-    this.phoneInput = container.querySelector('input[name="phone"]')!;
+    this.emailInput = ensureElement<HTMLInputElement>('input[name="email"]', container);
+    this.phoneInput = ensureElement<HTMLInputElement>('input[name="phone"]', container);
+    this.submitButton = ensureElement<HTMLButtonElement>('button[type="submit"]', container);
+    this.errorElement = ensureElement<HTMLElement>('.form__errors', container);
 
-    this.errorElement =
-      (container.querySelector('.form__errors') as HTMLElement | null) ?? null;
+    const updateState = () => {
+      const filled = this.emailInput.value.trim() && this.phoneInput.value.trim();
+      this.submitButton.disabled = !filled;
 
-    const submit =
-      (container.querySelector('button[type="submit"]') as HTMLButtonElement | null) ||
-      (container.querySelector('.order__button') as HTMLButtonElement | null);
-
-    if (!submit) {
-      throw new Error('Кнопка отправки во второй форме заказа не найдена');
-    }
-
-    this.submitButton = submit;
-
-    // Локальная проверка заполненности полей
-    const updateSubmitState = () => {
-      const hasEmail = this.emailInput.value.trim().length > 0;
-      const hasPhone = this.phoneInput.value.trim().length > 0;
-
-      this.submitButton.disabled = !(hasEmail && hasPhone);
-
-      if (this.errorElement && this.submitButton.disabled) {
+      if (!filled && this.errorElement) {
         this.errorElement.textContent = '';
       }
     };
 
-    // Инициализация состояния кнопки
-    updateSubmitState();
-
-    // ----- события ввода -----
+    updateState();
 
     this.emailInput.addEventListener('input', () => {
-      events.emit('order:change-email', {
-        email: this.emailInput.value,
-      });
-      updateSubmitState();
+      events.emit('order:change-email', { email: this.emailInput.value });
+      updateState();
     });
 
     this.phoneInput.addEventListener('input', () => {
-      events.emit('order:change-phone', {
-        phone: this.phoneInput.value,
-      });
-      updateSubmitState();
+      events.emit('order:change-phone', { phone: this.phoneInput.value });
+      updateState();
     });
 
-    // ----- отправка формы -----
     this.formElement.addEventListener('submit', (event) => {
       event.preventDefault();
-
-      if (this.submitButton.disabled) {
-        return;
+      if (!this.submitButton.disabled) {
+        events.emit('order:submit-step2', {});
       }
-
-      events.emit('order:submit-step2', {});
     });
   }
 
-  /**
-   * Обновление данных формы (вызывается из presenter при buyer:changed)
-   */
-  public updateFields(data: { email?: string; phone?: string }) {
-    if (data.email !== undefined) {
-      this.emailInput.value = data.email;
-    }
+  updateFields(data: Partial<IBuyer>) {
+    if (data.email !== undefined) this.emailInput.value = data.email;
+    if (data.phone !== undefined) this.phoneInput.value = data.phone;
 
-    if (data.phone !== undefined) {
-      this.phoneInput.value = data.phone;
-    }
-
-    // синхронизация состояния кнопки
-    const hasEmail = this.emailInput.value.trim().length > 0;
-    const hasPhone = this.phoneInput.value.trim().length > 0;
-
-    this.submitButton.disabled = !(hasEmail && hasPhone);
-
-    if (this.errorElement && this.submitButton.disabled) {
-      this.errorElement.textContent = '';
-    }
+    const filled = this.emailInput.value.trim() && this.phoneInput.value.trim();
+    this.submitButton.disabled = !filled;
   }
 
-  /**
-   * Установка состояния валидации от модели Buyer
-   */
-  public setValidationState(options: { canSubmit: boolean; errorMessage?: string }) {
-    const { canSubmit, errorMessage } = options;
-
+  setValidationState({ canSubmit, errorMessage }: { canSubmit: boolean; errorMessage?: string }) {
     this.submitButton.disabled = !canSubmit;
-
     if (this.errorElement) {
       this.errorElement.textContent = errorMessage ?? '';
     }
-  }
-
-  render(): HTMLElement {
-    return this.container;
   }
 }

@@ -6,18 +6,17 @@ export class Modal {
   protected contentElement: HTMLElement;
 
   constructor() {
-    // Используем ensureElement вместо document.querySelector
     this.modalElement = ensureElement<HTMLElement>('.modal');
     this.contentElement = ensureElement<HTMLElement>('.modal__content', this.modalElement);
 
     // закрытие по крестику
-    const closeBtn = this.modalElement.querySelector('.modal__close');
-    closeBtn?.addEventListener('click', () => {
+    const closeBtn = ensureElement<HTMLButtonElement>('.modal__close', this.modalElement);
+    closeBtn.addEventListener('click', () => {
       this.close();
       events.emit('modal:close', {});
     });
 
-    // закрытие по клику вне контента
+    // закрытие по клику вне контента (по фону)
     this.modalElement.addEventListener('click', (event) => {
       if (event.target === this.modalElement) {
         this.close();

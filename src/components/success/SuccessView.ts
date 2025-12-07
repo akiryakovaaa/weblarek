@@ -1,4 +1,5 @@
 import { events } from '../base/Events';
+import { ensureAllElements } from '../../utils/utils';
 
 export class SuccessView {
 	private container: HTMLElement;
@@ -8,15 +9,33 @@ export class SuccessView {
 	constructor(container: HTMLElement) {
 		this.container = container;
 
-		this.button =
-			(container.querySelector('.success__button') as HTMLButtonElement) ||
-			(container.querySelector('button[type="button"]') as HTMLButtonElement) ||
-			(container.querySelector('button') as HTMLButtonElement);
+		// кнопка: пробуем несколько селекторов по приоритету
+		const [primaryButton] = ensureAllElements<HTMLButtonElement>(
+			'.success__button',
+			container
+		);
+		const [typeButton] = ensureAllElements<HTMLButtonElement>(
+			'button[type="button"]',
+			container
+		);
+		const [anyButton] = ensureAllElements<HTMLButtonElement>(
+			'button',
+			container
+		);
 
-		this.descriptionElement =
-			(this.container.querySelector('.success__description') as HTMLElement) ||
-			(this.container.querySelector('.modal__description') as HTMLElement) ||
-			null;
+		this.button = primaryButton ?? typeButton ?? anyButton ?? null;
+
+		// текст описания: пробуем несколько вариантов
+		const [successDescription] = ensureAllElements<HTMLElement>(
+			'.success__description',
+			container
+		);
+		const [modalDescription] = ensureAllElements<HTMLElement>(
+			'.modal__description',
+			container
+		);
+
+		this.descriptionElement = successDescription ?? modalDescription ?? null;
 
 		if (this.button) {
 			this.button.addEventListener('click', () => {
@@ -29,13 +48,15 @@ export class SuccessView {
 	 * total — сумма заказа (в синапсах)
 	 */
 	render(total: number = 0): HTMLElement {
-	const priceElement = this.container.querySelector('.order-success__description');
+		const [priceElement] = ensureAllElements<HTMLElement>(
+			'.order-success__description',
+			this.container
+		);
 
-	if (priceElement) {
-		priceElement.textContent = `Списано ${total} синапсов`;
+		if (priceElement) {
+			priceElement.textContent = `Списано ${total} синапсов`;
+		}
+
+		return this.container;
 	}
-
-	return this.container;
-}
-
 }

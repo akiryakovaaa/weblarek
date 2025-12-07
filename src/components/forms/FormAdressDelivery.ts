@@ -1,12 +1,13 @@
 import { BaseForm } from '../base/BaseForm';
 import { events } from '../base/Events';
 import { IBuyer } from '../../types';
+import { ensureElement, ensureAllElements } from '../../utils/utils';
 
 export class FormAdressDelivery extends BaseForm {
 	private payment: 'card' | 'cash' | null = null;
 	private address = '';
 
-	private paymentButtons: NodeListOf<HTMLButtonElement>;
+	private paymentButtons: HTMLButtonElement[];
 	private addressInput: HTMLInputElement;
 	private errorElement: HTMLElement;
 	private submitButton: HTMLButtonElement;
@@ -14,19 +15,29 @@ export class FormAdressDelivery extends BaseForm {
 	constructor(container: HTMLElement) {
 		super(container);
 
-		this.paymentButtons =
-			this.formElement.querySelectorAll<HTMLButtonElement>('.button_alt');
-		this.addressInput =
-			this.formElement.querySelector<HTMLInputElement>('input[name="address"]')!;
-		this.errorElement =
-			this.formElement.querySelector<HTMLElement>('.form__errors')!;
-		this.submitButton =
-			this.formElement.querySelector<HTMLButtonElement>('.order__button')!;
+		// все обращения к DOM — только через утилиты
+		this.paymentButtons = ensureAllElements<HTMLButtonElement>(
+			'.button_alt',
+			this.formElement
+		);
+		this.addressInput = ensureElement<HTMLInputElement>(
+			'input[name="address"]',
+			this.formElement
+		);
+		this.errorElement = ensureElement<HTMLElement>(
+			'.form__errors',
+			this.formElement
+		);
+		this.submitButton = ensureElement<HTMLButtonElement>(
+			'.order__button',
+			this.formElement
+		);
 
 		// обработчики кнопок оплаты
 		this.paymentButtons.forEach((btn) => {
 			btn.addEventListener('click', () => {
-				const val = btn.getAttribute('name') === 'cash' ? 'cash' : 'card';
+				const val: 'card' | 'cash' =
+					btn.getAttribute('name') === 'cash' ? 'cash' : 'card';
 				this.payment = val;
 
 				this.paymentButtons.forEach((b) =>
@@ -62,11 +73,12 @@ export class FormAdressDelivery extends BaseForm {
 				)
 			);
 		}
-		
-		if (data.payment === null) {
-   			this.paymentButtons.forEach((b) => b.classList.remove('button_alt-active'));
-		}
 
+		if (data.payment === null) {
+			this.paymentButtons.forEach((b) =>
+				b.classList.remove('button_alt-active')
+			);
+		}
 
 		if (data.address !== undefined) {
 			this.address = data.address;

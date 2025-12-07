@@ -4,61 +4,58 @@ import { events } from '../base/Events';
 import { CDN_URL, categoryMap } from '../../utils/constants';
 
 export class CardCatalog extends BaseCard {
-	private id!: string;
+    private id: string = '';
 
-	constructor(container: HTMLElement) {
-		super(container);
+    constructor(container: HTMLElement) {
+        super(container);
 
-		// клик по всей карточке — открыть превью
-		container.addEventListener('click', () => {
-			events.emit('product:select', { id: this.id });
-		});
+        // клик по всей карточке — открыть превью
+        container.addEventListener('click', () => {
+            events.emit('product:select', { id: this.id });
+        });
 
-		// клик по кнопке "Купить" — добавить в корзину
-		if (this.buttonElement) {
-			this.buttonElement.addEventListener('click', (event) => {
-				event.stopPropagation();
-				if (this.buttonElement?.disabled) return; // если "Недоступно" — ничего не делаем
+        // клик по кнопке "Купить"
+        const button = this.buttonElement;
+        if (button) {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
 
-				events.emit('product:add-to-basket', { id: this.id });
-			});
-		}
-	}
+                if (button.disabled) return; // "Недоступно" — ничего не делаем
 
-	render(data: IProduct): HTMLElement {
-		this.id = data.id;
+                events.emit('product:add-to-basket', { id: this.id });
+            });
+        }
+    }
 
-		this.title = data.title;
-		this.price = data.price;
-		this.image = `${CDN_URL}/${data.image}`;
-		this.category = data.category;
+    render(data: IProduct): HTMLElement {
+        this.id = data.id;
 
-		const categoryElement = this.container.querySelector(
-			'.card__category'
-		) as HTMLElement | null;
+        this.title = data.title;
+        this.price = data.price;
+        this.image = `${CDN_URL}/${data.image}`;
+        this.category = data.category;
 
-		if (categoryElement) {
-			categoryElement.className = 'card__category';
+        // сбрасываем классы категории
+        this.categoryElement.className = 'card__category';
 
-			const map = categoryMap as Record<string, string>;
-			const categoryClass = map[data.category];
+        const map = categoryMap as Record<string, string>;
+        const categoryClass = map[data.category];
 
-			if (categoryClass) {
-				categoryElement.classList.add(categoryClass);
-			}
+        if (categoryClass) {
+            this.categoryElement.classList.add(categoryClass);
+        }
 
-			categoryElement.textContent = data.category;
-		}
+        this.categoryElement.textContent = data.category;
 
-		// блокируем товар без цены
-		if (this.buttonElement) {
-			if (data.price === null) {
-				this.setButtonDisabled(true, 'Недоступно');
-			} else {
-				this.setButtonDisabled(false, 'Купить');
-			}
-		}
+        // блокируем товар без цены
+        if (this.buttonElement) {
+            if (data.price === null) {
+                this.setButtonDisabled(true, 'Недоступно');
+            } else {
+                this.setButtonDisabled(false, 'Купить');
+            }
+        }
 
-		return this.container;
-	}
+        return this.container;
+    }
 }
